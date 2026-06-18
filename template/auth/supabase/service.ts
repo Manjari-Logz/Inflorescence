@@ -447,6 +447,27 @@ export class AuthService {
     }
   }
 
+  async resetPassword(email: string) {
+    try {
+      return await safeSupabaseOperation(async (client) => {
+        const { error } = await withTimeout(
+          client.auth.resetPasswordForEmail(email),
+          TIMEOUT_CONFIG.AUTH_OPERATIONS,
+          'ResetPassword'
+        );
+        if (error) return { error: error.message, errorType: 'business' };
+        return {};
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown reset error';
+      return { error: errorMessage.includes('timeout') ? 'Request timeout, please retry' : 'Failed to send reset email', errorType: 'network' };
+    }
+  }
+
+  async resendOTP(email: string) {
+    return this.sendOTP(email, { shouldCreateUser: false });
+  }
+
   async signInWithGoogle(): Promise<GoogleSignInResult> {
     try {
       // Generate cross-platform redirect URL

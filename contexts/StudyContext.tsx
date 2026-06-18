@@ -11,6 +11,7 @@ interface StudyContextType {
   deleteSubject: (id: string, domainId: string) => Promise<void>;
   addResource: (subjectId: string, domainId: string, type: string, title: string, url?: string) => Promise<void>;
   deleteResource: (id: string, subjectId: string, domainId: string) => Promise<void>;
+  updateSubjectHours: (subjectId: string, domainId: string, hours: number) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -98,8 +99,19 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateSubjectHours = async (subjectId: string, domainId: string, hours: number) => {
+    const { error } = await studyService.updateSubjectHours(subjectId, hours);
+    if (!error) {
+      setDomains(prev => prev.map(d =>
+        d.id === domainId
+          ? { ...d, subjects: d.subjects?.map(s => s.id === subjectId ? { ...s, study_hours: hours } : s) }
+          : d
+      ));
+    }
+  };
+
   return (
-    <StudyContext.Provider value={{ domains, loading, addDomain, deleteDomain, addSubject, deleteSubject, addResource, deleteResource, refresh: load }}>
+    <StudyContext.Provider value={{ domains, loading, addDomain, deleteDomain, addSubject, deleteSubject, addResource, deleteResource, updateSubjectHours, refresh: load }}>
       {children}
     </StudyContext.Provider>
   );

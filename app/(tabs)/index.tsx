@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
   StatusBar,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth, useAlert } from '@/template';
@@ -10,19 +11,23 @@ import { useTasks } from '@/hooks/useTasks';
 import { useBadges } from '@/hooks/useBadges';
 import { useMood } from '@/hooks/useMood';
 import { useEvents } from '@/hooks/useEvents';
-import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { Typography, Spacing, Radius, MODULE_ROUTES, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { BadgePill } from '@/components/ui/BadgePill';
 import { MoodPicker } from '@/components/feature/MoodPicker';
 import { PomodoroTimer } from '@/components/feature/PomodoroTimer';
+import { BadgeAchievement } from '@/components/feature/BadgeAchievement';
 import { MOOD_OPTIONS, MOTIVATIONAL_QUOTES, moodService } from '@/services/moodService';
 import { BADGE_EMOJIS } from '@/services/badgesService';
 
 const QUOTE = moodService.getRandomQuote();
 
 export default function DashboardScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const { user } = useAuth();
   const { tasks } = useTasks();
   const { badges } = useBadges();
@@ -31,6 +36,7 @@ export default function DashboardScreen() {
   const { showAlert } = useAlert();
   const [moodModal, setMoodModal] = useState(false);
   const [pomodoroModal, setPomodoroModal] = useState(false);
+  const [badgePreview, setBadgePreview] = useState<{ type: string; name: string } | null>(null);
 
   const today = new Date();
   const greeting = today.getHours() < 12 ? 'Good Morning' : today.getHours() < 17 ? 'Good Afternoon' : 'Good Evening';
@@ -65,15 +71,15 @@ export default function DashboardScreen() {
     await setMood(mood, score);
     setMoodModal(false);
     if (score >= 4) {
-      showAlert('Great vibes! 😀', 'Keep that positive energy flowing! You earned a Heart Badge!');
+      setBadgePreview({ type: 'heart', name: 'Heart Badge' });
     } else if (score <= 2) {
       showAlert(`${QUOTE.quote}`, `— ${QUOTE.author}`);
     }
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 80 }]}
         showsVerticalScrollIndicator={false}
@@ -199,6 +205,21 @@ export default function DashboardScreen() {
           </GlassCard>
         ) : null}
 
+        {/* Growth Modules Quick Access */}
+        <GlassCard style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Explore Modules</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.modulesRow}>
+              {MODULE_ROUTES.slice(0, 6).map(m => (
+                <Pressable key={m.key} style={styles.moduleChip} onPress={() => router.push(m.route as any)}>
+                  <MaterialIcons name={m.icon as any} size={18} color={m.color} />
+                  <Text style={styles.moduleChipText}>{m.title}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+        </GlassCard>
+
         {/* Pomodoro Quick Start */}
         <Pressable style={styles.pomodoroBtn} onPress={() => setPomodoroModal(true)}>
           <MaterialIcons name="timer" size={20} color={Colors.accent} />
@@ -229,12 +250,19 @@ export default function DashboardScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <BadgeAchievement
+        visible={!!badgePreview}
+        badgeType={badgePreview?.type ?? ''}
+        badgeName={badgePreview?.name ?? ''}
+        onDismiss={() => setBadgePreview(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
+  root: { flex: 1 },
   scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
   greeting: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
@@ -277,6 +305,9 @@ const styles = StyleSheet.create({
   eventDate: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
   pomodoroBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surfaceLight, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.base, gap: Spacing.md, marginBottom: Spacing.base },
   pomodoroBtnText: { flex: 1, color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.base, fontWeight: '600' },
+  modulesRow: { flexDirection: 'row', gap: Spacing.sm, paddingVertical: Spacing.xs },
+  moduleChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceLight },
+  moduleChipText: { color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: Spacing.base },
   modalCard: { backgroundColor: Colors.surface, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.border, padding: Spacing.xl, width: '100%', gap: Spacing.md },
   modalTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xl, fontWeight: '700' },

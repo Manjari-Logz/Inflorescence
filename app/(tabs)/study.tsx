@@ -7,12 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAlert } from '@/template';
 import { useStudy } from '@/hooks/useStudy';
-import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { Typography, Spacing, Radius, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { ResourceViewer } from '@/components/feature/ResourceViewer';
+import { StudyResource } from '@/services/studyService';
 
-const DOMAIN_COLORS = Colors.domainColors;
 const RESOURCE_TYPES = ['YouTube', 'PDF', 'Website', 'Drive', 'Notes', 'Other'];
 const RESOURCE_ICONS: Record<string, string> = {
   YouTube: 'play-circle-outline',
@@ -25,7 +27,8 @@ const RESOURCE_ICONS: Record<string, string> = {
 
 export default function StudyScreen() {
   const insets = useSafeAreaInsets();
-  const { domains, loading, addDomain, deleteDomain, addSubject, deleteSubject, addResource, deleteResource } = useStudy();
+  const { colors } = useAppTheme();
+  const { domains, loading, addDomain, deleteDomain, addSubject, deleteSubject, addResource, deleteResource, updateSubjectHours } = useStudy();
   const { showAlert } = useAlert();
 
   const [expandedDomain, setExpandedDomain] = useState<string | null>(null);
@@ -51,9 +54,12 @@ export default function StudyScreen() {
   const [resourceTitle, setResourceTitle] = useState('');
   const [resourceUrl, setResourceUrl] = useState('');
   const [savingResource, setSavingResource] = useState(false);
+  const [viewerResource, setViewerResource] = useState<StudyResource | null>(null);
 
+  const DOMAIN_COLORS = colors.domainColors;
   const totalSubjects = domains.reduce((a, d) => a + (d.subjects?.length ?? 0), 0);
   const totalResources = domains.reduce((a, d) => a + (d.subjects?.reduce((b, s) => b + (s.resources?.length ?? 0), 0) ?? 0), 0);
+  const totalHours = domains.reduce((a, d) => a + (d.subjects?.reduce((b, s) => b + (s.study_hours ?? 0), 0) ?? 0), 0);
 
   const handleAddDomain = async () => {
     if (!domainName.trim()) { showAlert('Required', 'Enter a domain name.'); return; }
@@ -83,14 +89,14 @@ export default function StudyScreen() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.screenTitle}>Study Chamber</Text>
-          <Text style={styles.screenSub}>{domains.length} domains · {totalSubjects} subjects · {totalResources} resources</Text>
+          <Text style={[styles.screenTitle, { color: colors.text }]}>Study Chamber</Text>
+          <Text style={[styles.screenSub, { color: colors.textMuted }]}>{domains.length} domains · {totalSubjects} subjects · {totalResources} resources · {totalHours}h tracked</Text>
         </View>
         <Pressable style={styles.addBtn} onPress={() => setDomainModal(true)}>
           <MaterialIcons name="add" size={26} color="#fff" />
@@ -137,8 +143,11 @@ export default function StudyScreen() {
                         <View key={subject.id} style={styles.subjectCard}>
                           <Pressable style={styles.subjectHeader} onPress={() => setExpandedSubject(isSubExpanded ? null : subject.id)}>
                             <MaterialIcons name="book" size={16} color={domain.color} />
-                            <Text style={styles.subjectName}>{subject.name}</Text>
-                            <Text style={styles.resourceCount}>{subject.resources?.length ?? 0} resources</Text>
+                            <Text style={[styles.subjectName, { color: colors.text }]}>{subject.name}</Text>
+                            <Text style={[styles.resourceCount, { color: colors.textMuted }]}>{subject.study_hours ?? 0}h · {subject.resources?.length ?? 0} res</Text>
+                            <Pressable hitSlop={8} onPress={() => updateSubjectHours(subject.id, domain.id, (subject.study_hours ?? 0) + 0.5)}>
+                              <MaterialIcons name="add-circle-outline" size={18} color={colors.accent} />
+                            </Pressable>
                             <Pressable hitSlop={8} onPress={() => showAlert('Delete Subject', `Delete "${subject.name}"?`, [
                               { text: 'Cancel', style: 'cancel' },
                               { text: 'Delete', style: 'destructive', onPress: () => deleteSubject(subject.id, domain.id) },
@@ -151,14 +160,14 @@ export default function StudyScreen() {
                           {isSubExpanded ? (
                             <View style={styles.resourceSection}>
                               {(subject.resources ?? []).map(res => (
-                                <View key={res.id} style={styles.resourceRow}>
-                                  <MaterialIcons name={RESOURCE_ICONS[res.type] as any ?? 'link'} size={16} color={Colors.accent} />
-                                  <Text style={styles.resourceTitle} numberOfLines={1}>{res.title}</Text>
-                                  {res.url ? <Text style={styles.resourceUrl} numberOfLines={1}>{res.url}</Text> : null}
+                                <Pressable key={res.id} style={styles.resourceRow} onPress={() => setViewerResource(res)}>
+                                  <MaterialIcons name={RESOURCE_ICONS[res.type] as any ?? 'link'} size={16} color={colors.accent} />
+                                  <Text style={[styles.resourceTitle, { color: colors.textSecondary }]} numberOfLines={1}>{res.title}</Text>
+                                  <MaterialIcons name="open-in-new" size={14} color={colors.textDim} />
                                   <Pressable hitSlop={8} onPress={() => deleteResource(res.id, subject.id, domain.id)}>
-                                    <MaterialIcons name="close" size={14} color={Colors.textDim} />
+                                    <MaterialIcons name="close" size={14} color={colors.textDim} />
                                   </Pressable>
-                                </View>
+                                </Pressable>
                               ))}
                               <Pressable
                                 style={styles.addResourceBtn}
@@ -251,12 +260,20 @@ export default function StudyScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <ResourceViewer
+        visible={!!viewerResource}
+        onClose={() => setViewerResource(null)}
+        type={viewerResource?.type ?? ''}
+        title={viewerResource?.title ?? ''}
+        url={viewerResource?.url}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
+  root: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingVertical: Spacing.md },
   screenTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xxl, fontWeight: '700' },
   screenSub: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, marginTop: 2 },

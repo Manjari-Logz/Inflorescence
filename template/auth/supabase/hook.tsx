@@ -137,6 +137,28 @@ export function useAuth(): AuthContextType {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    context.setOperationLoading(true);
+    try {
+      return await authService.resetPassword(email);
+    } catch (error) {
+      return { error: 'Failed to send reset email' };
+    } finally {
+      context.setOperationLoading(false);
+    }
+  };
+
+  const resendOTP = async (email: string): Promise<SendOTPResult> => {
+    context.setOperationLoading(true);
+    try {
+      return await authService.resendOTP(email);
+    } catch (error) {
+      return { error: 'Failed to resend verification code' };
+    } finally {
+      context.setOperationLoading(false);
+    }
+  };
+
   const signInWithGoogle = async (): Promise<GoogleSignInResult> => {
     context.setOperationLoading(true);
     try {
@@ -165,5 +187,7 @@ export function useAuth(): AuthContextType {
     signInWithGoogle,
     logout,
     refreshSession,
+    resetPassword,
+    resendOTP,
   };
 }

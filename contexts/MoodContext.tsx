@@ -40,6 +40,10 @@ export function MoodProvider({ children }: { children: ReactNode }) {
     if (data) {
       setTodayMood(data);
       setRecentMoods(prev => [data, ...prev.filter(m => m.date !== data.date)]);
+      if (score >= 4) {
+        const { badgesService } = await import('@/services/badgesService');
+        await badgesService.awardMoodBadge(user.id);
+      }
     }
   };
 

@@ -2,15 +2,17 @@ import React from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, StatusBar,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth, useAlert } from '@/template';
 import { useTasks } from '@/hooks/useTasks';
 import { useBadges } from '@/hooks/useBadges';
 import { useMood } from '@/hooks/useMood';
 import { useGoals } from '@/hooks/useGoals';
 import { useEvents } from '@/hooks/useEvents';
-import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { Typography, Spacing, Radius, MODULE_ROUTES, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { BadgePill } from '@/components/ui/BadgePill';
@@ -19,7 +21,9 @@ import { BADGE_MILESTONES, BADGE_EMOJIS } from '@/services/badgesService';
 import { MOOD_OPTIONS } from '@/services/moodService';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, mode, toggleTheme } = useAppTheme();
   const { user, logout } = useAuth();
   const { showAlert } = useAlert();
   const { tasks } = useTasks();
@@ -58,8 +62,8 @@ export default function ProfileScreen() {
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 80 }]}
         showsVerticalScrollIndicator={false}
@@ -180,14 +184,42 @@ export default function ProfileScreen() {
             <Text style={styles.progressItemValue}>{completionRate}%</Text>
           </View>
           <ProgressBar progress={completionRate} color={Colors.accent} height={6} />
-          <View style={styles.progressItem} style={{ marginTop: Spacing.md }}>
+          <View style={[styles.progressItem, { marginTop: Spacing.md }]}>
             <Text style={styles.progressItemLabel}>Goals Completed</Text>
             <Text style={styles.progressItemValue}>{completedGoals}/{shortGoals.length}</Text>
           </View>
           <ProgressBar progress={shortGoals.length > 0 ? (completedGoals / shortGoals.length) * 100 : 0} color={Colors.primaryLight} height={6} />
         </GlassCard>
 
+        {/* Growth Modules Hub */}
+        <GlassCard style={styles.sectionCard}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Growth Modules</Text>
+          <View style={styles.modulesGrid}>
+            {MODULE_ROUTES.map(m => (
+              <Pressable key={m.key} style={[styles.moduleTile, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]} onPress={() => router.push(m.route as any)}>
+                <MaterialIcons name={m.icon as any} size={24} color={m.color} />
+                <Text style={[styles.moduleLabel, { color: colors.textSecondary }]}>{m.title}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </GlassCard>
+
+        {/* Theme Toggle */}
+        <GlassCard style={styles.sectionCard}>
+          <Pressable style={styles.themeRow} onPress={toggleTheme}>
+            <MaterialIcons name={mode === 'dark' ? 'dark-mode' : 'light-mode'} size={24} color={colors.accent} />
+            <Text style={[styles.themeText, { color: colors.text }]}>{mode === 'dark' ? 'Dark Mode' : 'Light Mode'}</Text>
+            <Text style={[styles.themeHint, { color: colors.textMuted }]}>Tap to switch</Text>
+          </Pressable>
+        </GlassCard>
+
         {/* Sign Out */}
+        <PrimaryButton
+          title="View Badge Collection"
+          onPress={() => router.push('/modules/badges')}
+          variant="secondary"
+          style={{ marginBottom: Spacing.sm }}
+        />
         <PrimaryButton
           title="Sign Out"
           onPress={handleLogout}
@@ -201,7 +233,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
+  root: { flex: 1 },
   scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
   profileCard: { alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.lg },
   avatarLarge: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(41,182,246,0.15)', borderWidth: 2, borderColor: Colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
@@ -239,5 +271,11 @@ const styles = StyleSheet.create({
   progressItemLabel: { color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
   progressItemValue: { color: Colors.accent, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '700' },
   signOutBtn: { width: '100%', marginTop: Spacing.sm, marginBottom: Spacing.sm },
+  modulesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  moduleTile: { width: '30%', alignItems: 'center', padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, gap: Spacing.xs },
+  moduleLabel: { fontFamily: 'Arial', fontSize: Typography.sizes.xs, textAlign: 'center', fontWeight: '600' },
+  themeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  themeText: { flex: 1, fontFamily: 'Arial', fontSize: Typography.sizes.base, fontWeight: '600' },
+  themeHint: { fontFamily: 'Arial', fontSize: Typography.sizes.sm },
   versionText: { color: Colors.textDim, fontFamily: 'Arial', fontSize: Typography.sizes.xs, textAlign: 'center', marginBottom: Spacing.base },
 });
