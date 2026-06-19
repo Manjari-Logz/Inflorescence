@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Trophy, Calendar,
-  Clock, MapPin, ExternalLink, Circle, X,
+  Clock, MapPin, ExternalLink, Circle, X, Edit2, TrendingUp,
 } from 'lucide-react-native';
 import { useAlert } from '@/template';
 import { useEvents } from '@/hooks/useEvents';
@@ -15,6 +15,7 @@ import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Hackathon } from '@/services/eventsService';
 
 const ROUND_STATUSES = ['Pending', 'In Progress', 'Submitted', 'Cleared', 'Eliminated'];
@@ -31,7 +32,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function EventsScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const { hackathons, loading, addHackathon, deleteHackathon, addRound, updateRound, deleteRound } = useEvents();
+  const { hackathons, loading, addHackathon, updateHackathon, deleteHackathon, addRound, updateRound, deleteRound } = useEvents();
   const { showAlert } = useAlert();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -39,6 +40,7 @@ export default function EventsScreen() {
   const [roundModal, setRoundModal] = useState(false);
   const [activeHackathonId, setActiveHackathonId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editHackId, setEditHackId] = useState<string | null>(null);
 
   const [hName, setHName] = useState('');
   const [hTheme, setHTheme] = useState('');
@@ -55,13 +57,26 @@ export default function EventsScreen() {
   const [rLocation, setRLocation] = useState('');
   const [rNumber, setRNumber] = useState('1');
 
-  const resetHackForm = () => { setHName(''); setHTheme(''); setHOrganizer(''); setHRegLink(''); setHStart(''); setHEnd(''); setHProblem(''); };
+  const resetHackForm = () => { setEditHackId(null); setHName(''); setHTheme(''); setHOrganizer(''); setHRegLink(''); setHStart(''); setHEnd(''); setHProblem(''); };
   const resetRoundForm = () => { setRName(''); setRDeadline(''); setRReqs(''); setRMode('Online'); setRLocation(''); setRNumber('1'); };
+
+  const openEditHackathon = (h: Hackathon) => {
+    setEditHackId(h.id);
+    setHName(h.name); setHTheme(h.theme ?? ''); setHOrganizer(h.organizer ?? '');
+    setHRegLink(h.registration_link ?? ''); setHStart(h.start_date ?? ''); setHEnd(h.end_date ?? '');
+    setHProblem(h.problem_statement ?? '');
+    setHackModal(true);
+  };
 
   const handleAddHackathon = async () => {
     if (!hName.trim()) { showAlert('Required', 'Enter event name.'); return; }
     setSaving(true);
-    await addHackathon({ name: hName.trim(), theme: hTheme.trim() || undefined, problem_statement: hProblem.trim() || undefined, organizer: hOrganizer.trim() || undefined, registration_link: hRegLink.trim() || undefined, start_date: hStart.trim() || undefined, end_date: hEnd.trim() || undefined });
+    const payload = { name: hName.trim(), theme: hTheme.trim() || undefined, problem_statement: hProblem.trim() || undefined, organizer: hOrganizer.trim() || undefined, registration_link: hRegLink.trim() || undefined, start_date: hStart.trim() || undefined, end_date: hEnd.trim() || undefined };
+    if (editHackId) {
+      await updateHackathon(editHackId, payload);
+    } else {
+      await addHackathon(payload);
+    }
     setSaving(false); setHackModal(false); resetHackForm();
   };
 
@@ -132,6 +147,9 @@ export default function EventsScreen() {
                     </View>
                   </View>
                   <View style={styles.hackActions}>
+                    <Pressable hitSlop={8} onPress={() => openEditHackathon(h)}>
+                      <Edit2 size={15} color={colors.textMuted} strokeWidth={2} />
+                    </Pressable>
                     <Pressable hitSlop={8} onPress={() => showAlert('Delete Event', `Delete "${h.name}"?`, [
                       { text: 'Cancel', style: 'cancel' },
                       { text: 'Delete', style: 'destructive', onPress: () => deleteHackathon(h.id) },
@@ -142,8 +160,22 @@ export default function EventsScreen() {
                   </View>
                 </Pressable>
 
-                {isExp && (
+                  {isExp && (
                   <View style={[styles.expandedSection, { borderTopWidth: 1, borderTopColor: colors.border }]}>
+                    {/* Progress */}
+                    {(h.rounds?.length ?? 0) > 0 && (() => {
+                      const cleared = h.rounds?.filter(r => r.status === 'Cleared' || r.status === 'Submitted').length ?? 0;
+                      const pct = Math.round((cleared / (h.rounds?.length ?? 1)) * 100);
+                      return (
+                        <View style={{ gap: 6, marginBottom: Spacing.sm }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Round Progress</Text>
+                            <Text style={[styles.detailLabel, { color: colors.accent }]}>{cleared}/{h.rounds?.length ?? 0} ({pct}%)</Text>
+                          </View>
+                          <ProgressBar progress={pct} color={colors.accent} height={5} backgroundColor={colors.surfaceLight} />
+                        </View>
+                      );
+                    })()}
                     {h.theme && <Text style={[styles.detailRow, { color: colors.textSecondary }]}><Text style={[styles.detailLabel, { color: colors.textMuted }]}>Theme  </Text>{h.theme}</Text>}
                     {h.problem_statement && <Text style={[styles.detailRow, { color: colors.textSecondary }]} numberOfLines={3}><Text style={[styles.detailLabel, { color: colors.textMuted }]}>Problem  </Text>{h.problem_statement}</Text>}
                     {h.start_date && <Text style={[styles.detailRow, { color: colors.textSecondary }]}><Text style={[styles.detailLabel, { color: colors.textMuted }]}>Start  </Text>{h.start_date}</Text>}
@@ -216,8 +248,8 @@ export default function EventsScreen() {
           <View style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: insets.bottom + 16 }]}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
             <View style={styles.sheetHeader}>
-              <Text style={[styles.sheetTitle, { color: colors.text }]}>New Event</Text>
-              <Pressable onPress={() => setHackModal(false)}><X size={20} color={colors.textMuted} strokeWidth={2} /></Pressable>
+              <Text style={[styles.sheetTitle, { color: colors.text }]}>{editHackId ? 'Edit Event' : 'New Event'}</Text>
+              <Pressable onPress={() => { setHackModal(false); resetHackForm(); }}><X size={20} color={colors.textMuted} strokeWidth={2} /></Pressable>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <AppInput label="Event Name *" placeholder="Smart India Hackathon 2025" value={hName} onChangeText={setHName} />
@@ -227,7 +259,7 @@ export default function EventsScreen() {
               <AppInput label="Registration Link" placeholder="https://..." value={hRegLink} onChangeText={setHRegLink} keyboardType="url" autoCapitalize="none" />
               <AppInput label="Start Date (YYYY-MM-DD)" placeholder="2025-11-01" value={hStart} onChangeText={setHStart} />
               <AppInput label="End Date (YYYY-MM-DD)" placeholder="2025-11-30" value={hEnd} onChangeText={setHEnd} />
-              <PrimaryButton title="Create Event" onPress={handleAddHackathon} loading={saving} />
+              <PrimaryButton title={editHackId ? 'Save Changes' : 'Create Event'} onPress={handleAddHackathon} loading={saving} />
             </ScrollView>
           </View>
         </KeyboardAvoidingView>

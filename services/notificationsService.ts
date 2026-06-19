@@ -14,22 +14,24 @@ Notifications.setNotificationHandler({
 });
 
 export const notificationsService = {
-  async registerForPush(userId: string): Promise<string | null> {
-    if (!Device.isDevice) return null;
-
+  async requestPermissions(): Promise<boolean> {
+    if (!Device.isDevice) return false;
     const { status: existing } = await Notifications.getPermissionsAsync();
-    let finalStatus = existing;
-    if (existing !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') return null;
+    if (existing === 'granted') return true;
+    const { status } = await Notifications.requestPermissionsAsync();
+    return status === 'granted';
+  },
+
+  async registerForPush(userId: string): Promise<string | null> {
+    const granted = await this.requestPermissions();
+    if (!granted) return null;
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Inflorescence',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
+        sound: 'default',
       });
     }
 
@@ -37,52 +39,54 @@ export const notificationsService = {
       const tokenData = await Notifications.getExpoPushTokenAsync();
       const token = tokenData.data;
       const client = getSupabaseClient();
-      await client.from('push_tokens').upsert({
-        user_id: userId,
-        token,
-        platform: Platform.OS,
-      }, { onConflict: 'user_id,token' });
+      await client.from('push_tokens').upsert({ user_id: userId, token, platform: Platform.OS }, { onConflict: 'user_id,token' });
       return token;
     } catch {
       return null;
     }
   },
 
-  async scheduleDailyReminder(hour = 9, minute = 0) {
+  async scheduleAllReminders(tasks: { title: string; deadline?: string }[]) {
     await Notifications.cancelAllScheduledNotificationsAsync();
+
+    // Morning summary — 9 AM daily
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: '🌸 Inflorescence',
-        body: 'Good morning! Check your tasks and log your mood for today.',
+        title: 'Good Morning!',
+        body: `You have ${tasks.filter(t => t.deadline).length} tasks with deadlines. Start strong today!`,
         sound: true,
       },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: 9, minute: 0 },
     });
-  },
 
-  async scheduleTaskReminders(tasks: { title: string; deadline?: string }[]) {
+    // Evening expense reminder — 8 PM daily
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Evening Check-in',
+        body: "How much did you spend today? Log your expenses in Money Vault.",
+        sound: true,
+      },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: 20, minute: 0 },
+    });
+
+    // Task deadline reminders
     const now = new Date();
     for (const task of tasks) {
       if (!task.deadline) continue;
       const deadline = new Date(task.deadline);
       if (deadline <= now) continue;
 
-      const offsets = [
-        { days: 0, label: 'Today' },
-        { days: -1, label: 'Tomorrow' },
-        { days: -2, label: 'Day after tomorrow' },
-      ];
-
-      for (const { days, label } of offsets) {
+      for (const daysBefore of [2, 1, 0]) {
         const triggerDate = new Date(deadline);
-        triggerDate.setDate(triggerDate.getDate() + days);
+        triggerDate.setDate(triggerDate.getDate() - daysBefore);
         triggerDate.setHours(9, 0, 0, 0);
         if (triggerDate <= now) continue;
 
+        const label = daysBefore === 0 ? 'today' : daysBefore === 1 ? 'tomorrow' : 'in 2 days';
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: `📋 Task Reminder (${label})`,
-            body: `"${task.title}" is due ${days === 0 ? 'today' : days === -1 ? 'tomorrow' : 'in 2 days'}.`,
+            title: `Task Due ${daysBefore === 0 ? 'Today' : `in ${daysBefore}d`}`,
+            body: `"${task.title}" is due ${label}.`,
           },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
         });
@@ -94,13 +98,16 @@ export const notificationsService = {
     const triggerDate = new Date(deadline);
     triggerDate.setHours(8, 0, 0, 0);
     if (triggerDate <= new Date()) return;
-
     await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '⏰ Deadline Reminder',
-        body: `"${title}" deadline is approaching!`,
-      },
+      content: { title: 'Deadline Reminder', body: `"${title}" deadline is approaching!` },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
+    });
+  },
+
+  async sendLocal(title: string, body: string) {
+    await Notifications.scheduleNotificationAsync({
+      content: { title, body, sound: true },
+      trigger: null,
     });
   },
 };

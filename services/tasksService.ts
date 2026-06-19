@@ -8,8 +8,13 @@ export interface Task {
   deadline?: string;
   category: string;
   priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
+  estimated_time?: number;
+  progress: number;
+  notes?: string;
   completed: boolean;
   completed_at?: string;
+  archived?: boolean;
   created_at: string;
 }
 

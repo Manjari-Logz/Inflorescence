@@ -27,17 +27,18 @@ CREATE TABLE IF NOT EXISTS tasks (
   category TEXT DEFAULT 'General',
   priority TEXT DEFAULT 'Medium',
   deadline DATE,
-  importance INTEGER DEFAULT 0,
-  urgency INTEGER DEFAULT 0,
   difficulty TEXT DEFAULT 'Medium',
   estimated_time INTEGER DEFAULT 0,
   progress INTEGER DEFAULT 0,
   notes TEXT,
   completed BOOLEAN DEFAULT FALSE,
   completed_at TIMESTAMPTZ,
+  archived BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+-- Add archived column if upgrading existing schema
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS task_progress (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -189,18 +190,60 @@ CREATE TABLE IF NOT EXISTS custom_items (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Exercise
+-- Exercise (extended)
 CREATE TABLE IF NOT EXISTS exercise_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   type TEXT NOT NULL,
   duration_minutes INTEGER DEFAULT 0,
   distance_km NUMERIC(6,2) DEFAULT 0,
+  weight_kg NUMERIC(5,1),
+  intensity TEXT DEFAULT 'Medium',
   calories INTEGER DEFAULT 0,
+  mood_before TEXT,
+  mood_after TEXT,
   notes TEXT,
   date DATE DEFAULT CURRENT_DATE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Money Vault
+CREATE TABLE IF NOT EXISTS expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  amount NUMERIC(10,2) NOT NULL,
+  category TEXT NOT NULL,
+  description TEXT,
+  payment_method TEXT DEFAULT 'Cash',
+  date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS money_vault_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  cash_in_hand NUMERIC(12,2) DEFAULT 0,
+  wallet_balance NUMERIC(12,2) DEFAULT 0,
+  bank_balance NUMERIC(12,2) DEFAULT 0,
+  savings_goal NUMERIC(12,2) DEFAULT 0,
+  emergency_fund NUMERIC(12,2) DEFAULT 0,
+  monthly_budget NUMERIC(12,2) DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
+ALTER TABLE exercise_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE money_vault_settings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own exercise" ON exercise_logs FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own expenses" ON expenses FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own vault settings" ON money_vault_settings FOR ALL USING (auth.uid() = user_id);
+
+-- Books (extended)
+ALTER TABLE books ADD COLUMN IF NOT EXISTS genre TEXT DEFAULT 'Other';
+ALTER TABLE books ADD COLUMN IF NOT EXISTS start_date DATE;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS target_date DATE;
 
 -- Reflections
 CREATE TABLE IF NOT EXISTS reflections (
@@ -252,7 +295,9 @@ CREATE POLICY "Users manage own tokens" ON push_tokens FOR ALL USING (auth.uid()
 CREATE POLICY "Users manage own tasks" ON tasks FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own task progress" ON task_progress FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own hackathons" ON hackathons FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users manage own hackathon rounds" ON hackathon_rounds FOR ALL USING (auth.uid() = auth.uid());
+CREATE POLICY "Users manage own hackathon rounds" ON hackathon_rounds FOR ALL USING (
+  auth.uid() = (SELECT user_id FROM hackathons WHERE id = hackathon_rounds.hackathon_id)
+);
 CREATE POLICY "Users manage own study chambers" ON study_chambers FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own goals" ON goals FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own achievements" ON achievements FOR ALL USING (auth.uid() = user_id);

@@ -8,12 +8,16 @@ import {
   Bell, Search, CheckCircle2, Clock, Flame, Star,
   BookOpen, Activity, Trophy, Target, ChevronRight,
   Timer, TrendingUp, Calendar, Sun, Sunset, Moon,
-  X,
+  X, Wallet,
 } from 'lucide-react-native';
 import { useAuth, useAlert } from '@/template';
 import { useTasks } from '@/hooks/useTasks';
 import { useBadges } from '@/hooks/useBadges';
 import { useEvents } from '@/hooks/useEvents';
+import { useBooks } from '@/hooks/useModules';
+import { useExercise } from '@/hooks/useModules';
+import { useMoneyVault } from '@/hooks/useModules';
+import { useGoals } from '@/hooks/useGoals';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius, MODULE_ROUTES, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -36,6 +40,10 @@ export default function HomeScreen() {
   const { tasks } = useTasks();
   const { badges } = useBadges();
   const { hackathons } = useEvents();
+  const { books } = useBooks();
+  const { logs: exerciseLogs } = useExercise();
+  const { expenses, settings: moneySettings } = useMoneyVault();
+  const { shortGoals } = useGoals();
   const { showAlert } = useAlert();
   const [pomodoroModal, setPomodoroModal] = useState(false);
   const [badgePreview, setBadgePreview] = useState<{ type: string; name: string } | null>(null);
@@ -56,6 +64,23 @@ export default function HomeScreen() {
     return new Date(t.completed_at).toDateString() === today.toDateString();
   });
 
+  // Reading stats
+  const readingProgress = books.length > 0 ? Math.round((books.filter(b => b.status === 'completed').length / books.length) * 100) : 0;
+  const currentlyReading = books.filter(b => b.status === 'reading').length;
+
+  // Exercise stats (this week)
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+  const weeklyExercise = exerciseLogs.filter(l => new Date(l.date) >= weekAgo);
+  const weeklyCalories = weeklyExercise.reduce((a, l) => a + l.calories, 0);
+
+  // Money
+  const todayStr = today.toISOString().split('T')[0];
+  const todaySpend = expenses.filter(e => e.date === todayStr).reduce((a, e) => a + e.amount, 0);
+  const totalBalance = moneySettings.cash_in_hand + moneySettings.wallet_balance + moneySettings.bank_balance;
+
+  // Goals
+  const completedGoals = shortGoals.filter(g => g.completed).length;
+
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.completed).length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -72,6 +97,10 @@ export default function HomeScreen() {
     { label: 'Done Today', value: completedToday.length, icon: Star, color: Colors.success },
     { label: 'Total Badges', value: badges.length, icon: Trophy, color: Colors.warning },
     { label: 'Completion', value: `${completionRate}%`, icon: TrendingUp, color: '#8B5CF6' },
+    { label: 'Reading', value: `${readingProgress}%`, icon: BookOpen, color: '#8B5CF6' },
+    { label: 'Goals Done', value: `${completedGoals}/${shortGoals.length}`, icon: Target, color: Colors.success },
+    { label: 'Kcal/Week', value: weeklyCalories, icon: Activity, color: Colors.error },
+    { label: 'Balance', value: `₹${Math.round(totalBalance / 1000)}k`, icon: Wallet, color: '#F59E0B' },
   ];
 
   const moduleShortcuts = [
@@ -79,8 +108,8 @@ export default function HomeScreen() {
     { label: 'Events', icon: Calendar, route: '/(tabs)/events', color: Colors.warning },
     { label: 'Books', icon: BookOpen, route: '/modules/books', color: '#8B5CF6' },
     { label: 'Exercise', icon: Activity, route: '/modules/exercise', color: Colors.success },
+    { label: 'Money', icon: Wallet, route: '/modules/money-vault', color: '#F59E0B' },
     { label: 'Goals', icon: Target, route: '/(tabs)/goals', color: '#A855F7' },
-    { label: 'Analytics', icon: TrendingUp, route: '/modules/analytics', color: colors.accent },
   ];
 
   return (

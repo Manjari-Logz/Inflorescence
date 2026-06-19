@@ -8,7 +8,6 @@ interface BooksContextType {
   addBook: (input: Omit<Book, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateBook: (id: string, updates: Partial<Book>) => Promise<void>;
   removeBook: (id: string) => Promise<void>;
-  updatePage: (id: string, delta: number) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -33,30 +32,31 @@ export function BooksProvider({ children }: { children: ReactNode }) {
 
   const addBook = async (input: Omit<Book, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return;
+    const tempId = `temp_${Date.now()}`;
+    const optimistic: Book = { ...input, id: tempId, user_id: user.id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    setBooks(prev => [optimistic, ...prev]);
     const { data } = await booksService.create({ ...input, user_id: user.id });
-    if (data) setBooks(prev => [data, ...prev]);
+    if (data) {
+      setBooks(prev => prev.map(b => b.id === tempId ? data : b));
+    } else {
+      setBooks(prev => prev.filter(b => b.id !== tempId));
+    }
   };
 
   const updateBook = async (id: string, updates: Partial<Book>) => {
-    const { data } = await booksService.update(id, updates);
-    if (data) setBooks(prev => prev.map(b => b.id === id ? data : b));
+    setBooks(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+    const { error } = await booksService.update(id, updates);
+    if (error) await load();
   };
 
   const removeBook = async (id: string) => {
+    setBooks(prev => prev.filter(b => b.id !== id));
     const { error } = await booksService.remove(id);
-    if (!error) setBooks(prev => prev.filter(b => b.id !== id));
-  };
-
-  const updatePage = async (id: string, delta: number) => {
-    const book = books.find(b => b.id === id);
-    if (!book) return;
-    const next = Math.max(0, Math.min(book.total_pages, book.current_page + delta));
-    const status = next >= book.total_pages && book.total_pages > 0 ? 'completed' : book.status;
-    await updateBook(id, { current_page: next, status });
+    if (error) await load();
   };
 
   return (
-    <BooksContext.Provider value={{ books, loading, addBook, updateBook, removeBook, updatePage, refresh: load }}>
+    <BooksContext.Provider value={{ books, loading, addBook, updateBook, removeBook, refresh: load }}>
       {children}
     </BooksContext.Provider>
   );

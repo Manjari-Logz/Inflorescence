@@ -5,6 +5,7 @@ import { PlacementContext } from '@/contexts/PlacementContext';
 import { CustomSectionsContext } from '@/contexts/CustomSectionsContext';
 import { ExerciseContext } from '@/contexts/ExerciseContext';
 import { ReflectionContext } from '@/contexts/ReflectionContext';
+import { MoneyVaultContext } from '@/contexts/MoneyVaultContext';
 
 export function useBooks() {
   const ctx = useContext(BooksContext);
@@ -39,5 +40,11 @@ export function useExercise() {
 export function useReflection() {
   const ctx = useContext(ReflectionContext);
   if (!ctx) throw new Error('useReflection must be used within ReflectionProvider');
+  return ctx;
+}
+
+export function useMoneyVault() {
+  const ctx = useContext(MoneyVaultContext);
+  if (!ctx) throw new Error('useMoneyVault must be used within MoneyVaultProvider');
   return ctx;
 }

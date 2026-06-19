@@ -53,7 +53,7 @@ export default function AnalyticsScreen() {
   const study = analyticsService.computeStudyAnalytics(domains);
   const reading = analyticsService.computeReadingAnalytics(books);
   const goals = analyticsService.computeGoalAnalytics(shortGoals, longGoals, dreams);
-  const mood = analyticsService.computeMoodAnalytics(recentMoods);
+  const mood = analyticsService.computeMoodAnalytics(recentMoods.map(m => ({ mood: m.mood, score: m.mood_score })));
   const placement = analyticsService.computePlacementAnalytics(companies);
 
   const moodChartData = {

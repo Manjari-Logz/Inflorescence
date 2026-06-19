@@ -11,6 +11,7 @@ export default function ModulesLayout() {
       <Stack.Screen name="reflection" />
       <Stack.Screen name="analytics" />
       <Stack.Screen name="badges" />
+      <Stack.Screen name="money-vault" />
     </Stack>
   );
 }

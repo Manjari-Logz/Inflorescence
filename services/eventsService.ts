@@ -44,6 +44,12 @@ export const eventsService = {
     return { data: data as Hackathon | null, error: error?.message ?? null };
   },
 
+  async updateHackathon(id: string, updates: Partial<Omit<Hackathon, 'id' | 'created_at' | 'rounds'>>) {
+    const client = getSupabaseClient();
+    const { error } = await client.from('hackathons').update(updates).eq('id', id);
+    return { error: error?.message ?? null };
+  },
+
   async deleteHackathon(id: string) {
     const client = getSupabaseClient();
     const { error } = await client.from('hackathons').delete().eq('id', id);

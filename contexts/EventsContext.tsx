@@ -6,6 +6,7 @@ interface EventsContextType {
   hackathons: Hackathon[];
   loading: boolean;
   addHackathon: (input: Omit<Hackathon, 'id' | 'user_id' | 'created_at' | 'rounds'>) => Promise<Hackathon | null>;
+  updateHackathon: (id: string, updates: Partial<Omit<Hackathon, 'id' | 'user_id' | 'created_at' | 'rounds'>>) => Promise<void>;
   deleteHackathon: (id: string) => Promise<void>;
   addRound: (input: Omit<Round, 'id' | 'created_at'>) => Promise<void>;
   updateRound: (id: string, updates: Partial<Round>) => Promise<void>;
@@ -41,6 +42,11 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       return newH;
     }
     return null;
+  };
+
+  const updateHackathon = async (id: string, updates: Partial<Omit<Hackathon, 'id' | 'user_id' | 'created_at' | 'rounds'>>) => {
+    setHackathons(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h));
+    await eventsService.updateHackathon(id, updates);
   };
 
   const deleteHackathon = async (id: string) => {
@@ -81,7 +87,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <EventsContext.Provider value={{ hackathons, loading, addHackathon, deleteHackathon, addRound, updateRound, deleteRound, refresh: load }}>
+    <EventsContext.Provider value={{ hackathons, loading, addHackathon, updateHackathon, deleteHackathon, addRound, updateRound, deleteRound, refresh: load }}>
       {children}
     </EventsContext.Provider>
   );

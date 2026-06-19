@@ -19,7 +19,7 @@ import {
   Award,
   LayoutGrid,
   User,
-  Sparkles,
+  Wallet,
 } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,6 +51,7 @@ const MENU_ITEMS: MenuItem[] = [
   { label: 'Podcasts', icon: Headphones, route: '/modules/podcasts' },
   { label: 'Placement Drive', icon: Briefcase, route: '/modules/placement' },
   { label: 'Exercise', icon: Activity, route: '/modules/exercise' },
+  { label: 'Money Vault', icon: Wallet, route: '/modules/money-vault' },
   { label: 'Daily Reflection', icon: Edit3, route: '/modules/reflection' },
   { label: 'Analytics', icon: TrendingUp, route: '/modules/analytics' },
   { label: 'Badge Collection', icon: Award, route: '/modules/badges' },

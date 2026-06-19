@@ -14,6 +14,7 @@ import { PlacementProvider } from '@/contexts/PlacementContext';
 import { CustomSectionsProvider } from '@/contexts/CustomSectionsContext';
 import { ExerciseProvider } from '@/contexts/ExerciseContext';
 import { ReflectionProvider } from '@/contexts/ReflectionContext';
+import { MoneyVaultProvider } from '@/contexts/MoneyVaultContext';
 import { NotificationInitializer } from '@/components/feature/NotificationInitializer';
 
 export default function RootLayout() {
@@ -34,16 +35,18 @@ export default function RootLayout() {
                               <CustomSectionsProvider>
                                 <ExerciseProvider>
                                   <ReflectionProvider>
-                                    <NotificationInitializer />
-                                    <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-                                      <Stack.Screen name="index" />
-                                      <Stack.Screen name="login" />
-                                      <Stack.Screen name="forgot-password" />
-                                      <Stack.Screen name="verify-otp" />
-                                      <Stack.Screen name="verify-email" />
-                                      <Stack.Screen name="(tabs)" />
-                                      <Stack.Screen name="modules" options={{ animation: 'slide_from_right' }} />
-                                    </Stack>
+                                    <MoneyVaultProvider>
+                                      <NotificationInitializer />
+                                      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+                                        <Stack.Screen name="index" />
+                                        <Stack.Screen name="login" />
+                                        <Stack.Screen name="forgot-password" />
+                                        <Stack.Screen name="verify-otp" />
+                                        <Stack.Screen name="verify-email" />
+                                        <Stack.Screen name="(tabs)" />
+                                        <Stack.Screen name="modules" options={{ animation: 'slide_from_right' }} />
+                                      </Stack>
+                                    </MoneyVaultProvider>
                                   </ReflectionProvider>
                                 </ExerciseProvider>
                               </CustomSectionsProvider>

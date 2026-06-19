@@ -166,6 +166,7 @@ export const MODULE_ROUTES = [
   { key: 'placement', title: 'Placement', icon: 'briefcase', route: '/modules/placement', color: '#F59E0B' },
   { key: 'custom', title: 'Custom', icon: 'layout-grid', route: '/modules/custom-sections', color: '#06B6D4' },
   { key: 'exercise', title: 'Exercise', icon: 'activity', route: '/modules/exercise', color: '#22C55E' },
+  { key: 'money', title: 'Money Vault', icon: 'wallet', route: '/modules/money-vault', color: '#F59E0B' },
   { key: 'reflection', title: 'Reflect', icon: 'pen-line', route: '/modules/reflection', color: '#A855F7' },
   { key: 'analytics', title: 'Analytics', icon: 'bar-chart-2', route: '/modules/analytics', color: '#3B82F6' },
   { key: 'badges', title: 'Badges', icon: 'award', route: '/modules/badges', color: '#F59E0B' },

@@ -6,7 +6,8 @@ import { useRouter } from 'expo-router';
 import {
   Award, CheckCircle2, Flag, Zap, Moon, Sun, LogOut,
   ChevronRight, BookOpen, BarChart2, Trophy, Settings,
-  GraduationCap, Shield, Bell, Download, User,
+  GraduationCap, Shield, Bell, Download, User, Wallet,
+  Dumbbell, Headphones, Briefcase, Layers, PenLine, LayoutGrid,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth, useAlert } from '@/template';
@@ -29,6 +30,18 @@ function getLevelInfo(completedTasks: number) {
   if (completedTasks >= 10) return { label: 'Bronze', color: '#CD7F32', xp: 10 };
   return { label: 'Beginner', color: Colors.success, xp: 0 };
 }
+
+const MODULE_ICON_MAP: Record<string, any> = {
+  books: BookOpen,
+  podcasts: Headphones,
+  placement: Briefcase,
+  custom: Layers,
+  exercise: Dumbbell,
+  money: Wallet,
+  reflection: PenLine,
+  analytics: BarChart2,
+  badges: Trophy,
+};
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -74,6 +87,7 @@ export default function ProfileScreen() {
 
   const settingsItems = [
     { label: mode === 'dark' ? 'Light Mode' : 'Dark Mode', icon: mode === 'dark' ? Sun : Moon, onPress: toggleTheme, color: colors.accent },
+    { label: 'Money Vault', icon: Wallet, onPress: () => router.push('/modules/money-vault'), color: '#F59E0B' },
     { label: 'Badge Collection', icon: Trophy, onPress: () => router.push('/modules/badges'), color: Colors.warning },
     { label: 'Analytics', icon: BarChart2, onPress: () => router.push('/modules/analytics'), color: colors.accent },
     { label: 'Notifications', icon: Bell, onPress: () => {}, color: '#8B5CF6' },
@@ -148,7 +162,7 @@ export default function ProfileScreen() {
                 onPress={() => router.push(m.route as any)}
               >
                 <View style={[styles.moduleIconBox, { backgroundColor: m.color + '18' }]}>
-                  <BookOpen size={18} color={m.color} strokeWidth={2} />
+                  {(() => { const Icon = MODULE_ICON_MAP[m.key] ?? BookOpen; return <Icon size={18} color={m.color} strokeWidth={2} />; })()}
                 </View>
                 <Text style={[styles.moduleLabel, { color: colors.textSecondary }]} numberOfLines={1}>{m.title}</Text>
               </Pressable>

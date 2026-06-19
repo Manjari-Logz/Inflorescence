@@ -1,11 +1,12 @@
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/template';
-import { exerciseService, ExerciseLog, ExerciseType } from '@/services/exerciseService';
+import { exerciseService, ExerciseLog } from '@/services/exerciseService';
 
 interface ExerciseContextType {
   logs: ExerciseLog[];
   loading: boolean;
   addLog: (input: Omit<ExerciseLog, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
+  updateLog: (id: string, updates: Partial<ExerciseLog>) => Promise<void>;
   removeLog: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -35,13 +36,18 @@ export function ExerciseProvider({ children }: { children: ReactNode }) {
     if (data) setLogs(prev => [data, ...prev]);
   };
 
+  const updateLog = async (id: string, updates: Partial<ExerciseLog>) => {
+    const { error } = await exerciseService.update(id, updates);
+    if (!error) setLogs(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+  };
+
   const removeLog = async (id: string) => {
     const { error } = await exerciseService.remove(id);
     if (!error) setLogs(prev => prev.filter(l => l.id !== id));
   };
 
   return (
-    <ExerciseContext.Provider value={{ logs, loading, addLog, removeLog, refresh: load }}>
+    <ExerciseContext.Provider value={{ logs, loading, addLog, updateLog, removeLog, refresh: load }}>
       {children}
     </ExerciseContext.Provider>
   );

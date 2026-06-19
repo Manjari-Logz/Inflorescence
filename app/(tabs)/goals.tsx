@@ -60,21 +60,21 @@ export default function GoalsScreen() {
   const handleAddShortGoal = async () => {
     if (!sgTitle.trim()) { showAlert('Required', 'Enter a goal title.'); return; }
     setSaving(true);
-    await addShortGoal({ title: sgTitle.trim(), due_date: sgDue.trim() || undefined, progress: 0, checklist: sgChecklist, completed: false, user_id: '' });
+    await addShortGoal({ title: sgTitle.trim(), due_date: sgDue.trim() || undefined, progress: 0, checklist: sgChecklist, completed: false });
     setSaving(false); setModal(null); resetForms();
   };
 
   const handleAddLongGoal = async () => {
     if (!lgVision.trim()) { showAlert('Required', 'Enter your vision.'); return; }
     setSaving(true);
-    await addLongGoal({ vision: lgVision.trim(), milestones: lgMilestones, timeline: lgTimeline.trim() || undefined, progress: 0, user_id: '' });
+    await addLongGoal({ vision: lgVision.trim(), milestones: lgMilestones, timeline: lgTimeline.trim() || undefined, progress: 0 });
     setSaving(false); setModal(null); resetForms();
   };
 
   const handleAddDream = async () => {
     if (!dTitle.trim()) { showAlert('Required', 'Enter your dream.'); return; }
     setSaving(true);
-    await addDream({ title: dTitle.trim(), category: dCategory, notes: dNotes.trim() || undefined, target_year: dYear ? parseInt(dYear) : undefined, user_id: '' });
+    await addDream({ title: dTitle.trim(), category: dCategory, notes: dNotes.trim() || undefined, target_year: dYear ? parseInt(dYear) : undefined });
     setSaving(false); setModal(null); resetForms();
   };
 

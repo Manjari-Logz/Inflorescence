@@ -5,10 +5,13 @@ export interface Book {
   user_id: string;
   title: string;
   author?: string;
+  genre?: string;
   total_pages: number;
   current_page: number;
   cover_url?: string;
   pdf_url?: string;
+  start_date?: string;
+  target_date?: string;
   status: 'reading' | 'completed' | 'paused';
   created_at: string;
   updated_at: string;
@@ -40,11 +43,9 @@ export const booksService = {
   },
 
   getReadingStats(books: Book[]) {
-    const total = books.length;
     const completed = books.filter(b => b.status === 'completed').length;
     const pagesRead = books.reduce((a, b) => a + b.current_page, 0);
     const totalPages = books.reduce((a, b) => a + b.total_pages, 0);
-    const progress = totalPages > 0 ? Math.round((pagesRead / totalPages) * 100) : 0;
-    return { total, completed, pagesRead, totalPages, progress };
+    return { total: books.length, completed, pagesRead, totalPages, progress: totalPages > 0 ? Math.round((pagesRead / totalPages) * 100) : 0 };
   },
 };

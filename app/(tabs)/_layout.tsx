@@ -4,7 +4,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Home, CheckSquare, TrendingUp, Compass, User,
-  Plus, X, BookOpen, Dumbbell, Trophy, Layers, ListTodo,
+  Plus, X, BookOpen, Dumbbell, Trophy, Layers, ListTodo, Wallet,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Spacing, Radius, Typography } from '@/constants/theme';
@@ -25,6 +25,7 @@ export default function TabLayout() {
     { label: 'Add Task', icon: ListTodo, route: '/(tabs)/tasks', color: colors.accent },
     { label: 'Add Book', icon: BookOpen, route: '/modules/books', color: '#8B5CF6' },
     { label: 'Log Exercise', icon: Dumbbell, route: '/modules/exercise', color: '#22C55E' },
+    { label: 'Log Expense', icon: Wallet, route: '/modules/money-vault', color: '#F59E0B' },
     { label: 'Add Event', icon: Trophy, route: '/(tabs)/events', color: '#F59E0B' },
     { label: 'Custom Section', icon: Layers, route: '/modules/custom-sections', color: '#06B6D4' },
   ];

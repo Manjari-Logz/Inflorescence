@@ -43,6 +43,12 @@ export function useAuth(): AuthContextType {
       refreshSession: async () => {
         console.warn('Auth function not enabled');
       },
+      resetPassword: async (): Promise<{ error?: string }> => ({
+        error: 'Auth function not enabled, please check configuration'
+      }),
+      resendOTP: async (): Promise<SendOTPResult> => ({
+        error: 'Auth function not enabled, please check configuration'
+      }),
     };
   }
 

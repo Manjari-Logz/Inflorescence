@@ -10,6 +10,8 @@ interface TasksContextType {
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   removeTask: (id: string) => Promise<void>;
   completeTask: (id: string) => Promise<{ badge?: string; badgeName?: string } | null>;
+  archiveTask: (id: string) => Promise<void>;
+  restoreTask: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -34,34 +36,55 @@ export function TasksProvider({ children }: { children: ReactNode }) {
 
   const addTask = async (input: Omit<Task, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
-    const { data } = await tasksService.create({ ...input, user_id: user.id });
-    if (data) setTasks(prev => [data, ...prev]);
+    // Optimistic update
+    const tempId = `temp_${Date.now()}`;
+    const optimistic: Task = { ...input, id: tempId, user_id: user.id, created_at: new Date().toISOString() };
+    setTasks(prev => [optimistic, ...prev]);
+    const { data, error } = await tasksService.create({ ...input, user_id: user.id });
+    if (data) {
+      setTasks(prev => prev.map(t => t.id === tempId ? data : t));
+    } else {
+      setTasks(prev => prev.filter(t => t.id !== tempId));
+    }
   };
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
+    // Optimistic update
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
     const { error } = await tasksService.update(id, updates);
-    if (!error) setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    if (error) await load(); // revert on error
   };
 
   const removeTask = async (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
     const { error } = await tasksService.remove(id);
-    if (!error) setTasks(prev => prev.filter(t => t.id !== id));
+    if (error) await load();
   };
 
   const completeTask = async (id: string): Promise<{ badge?: string; badgeName?: string } | null> => {
     if (!user) return null;
     const completedAt = new Date().toISOString();
-    const { error } = await tasksService.update(id, { completed: true, completed_at: completedAt });
-    if (error) return null;
     setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: true, completed_at: completedAt } : t));
+    const { error } = await tasksService.update(id, { completed: true, completed_at: completedAt });
+    if (error) { await load(); return null; }
     const completedCount = tasks.filter(t => t.completed).length + 1;
     const result = await badgesService.checkAndAwardTaskBadge(user.id, completedCount);
     if (result.awarded) return { badge: result.type, badgeName: result.name };
     return null;
   };
 
+  const archiveTask = async (id: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, archived: true } : t));
+    await tasksService.update(id, { archived: true } as any);
+  };
+
+  const restoreTask = async (id: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, archived: false } : t));
+    await tasksService.update(id, { archived: false } as any);
+  };
+
   return (
-    <TasksContext.Provider value={{ tasks, loading, addTask, updateTask, removeTask, completeTask, refresh: load }}>
+    <TasksContext.Provider value={{ tasks, loading, addTask, updateTask, removeTask, completeTask, archiveTask, restoreTask, refresh: load }}>
       {children}
     </TasksContext.Provider>
   );

@@ -55,6 +55,8 @@ export interface AuthContextType {
   signInWithGoogle: () => Promise<GoogleSignInResult>;
   logout: () => Promise<LogoutResult>;
   refreshSession: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error?: string }>;
+  resendOTP: (email: string) => Promise<SendOTPResult>;
 }
 
 export interface AuthConfig {
