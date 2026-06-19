@@ -2,7 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, Pressable, Modal, Animated, Dimensions, ScrollView, TextInput, Keyboard
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import {
+  X,
+  Search,
+  LayoutDashboard,
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  Flag,
+  Book,
+  Headphones,
+  Briefcase,
+  Activity,
+  Edit3,
+  TrendingUp,
+  Award,
+  LayoutGrid,
+  User,
+  Sparkles,
+} from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -19,26 +37,25 @@ interface SidebarDrawerProps {
 
 interface MenuItem {
   label: string;
-  icon: string;
+  icon: React.ComponentType<any>;
   route: string;
-  emoji: string;
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { label: 'Dashboard', icon: 'dashboard', route: '/(tabs)/', emoji: '🏠' },
-  { label: 'Study Chamber', icon: 'menu-book', route: '/(tabs)/study', emoji: '📚' },
-  { label: 'Events & Hackathons', icon: 'event', route: '/(tabs)/events', emoji: '📅' },
-  { label: 'Tasks', icon: 'check-circle-outline', route: '/(tabs)/tasks', emoji: '✅' },
-  { label: 'Goals', icon: 'flag', route: '/(tabs)/goals', emoji: '🎯' },
-  { label: 'Books', icon: 'book', route: '/modules/books', emoji: '📖' },
-  { label: 'Podcasts', icon: 'headphones', route: '/modules/podcasts', emoji: '🎧' },
-  { label: 'Placement Drive', icon: 'work', route: '/modules/placement', emoji: '💼' },
-  { label: 'Exercise', icon: 'fitness-center', route: '/modules/exercise', emoji: '🏃' },
-  { label: 'Daily Reflection', icon: 'edit-note', route: '/modules/reflection', emoji: '📝' },
-  { label: 'Analytics', icon: 'analytics', route: '/modules/analytics', emoji: '📊' },
-  { label: 'Badge Collection', icon: 'military-tech', route: '/modules/badges', emoji: '🏆' },
-  { label: 'Custom Sections', icon: 'dashboard-customize', route: '/modules/custom-sections', emoji: '🧩' },
-  { label: 'Profile', icon: 'person', route: '/(tabs)/profile', emoji: '⚙️' },
+  { label: 'Dashboard', icon: LayoutDashboard, route: '/(tabs)/' },
+  { label: 'Study Chamber', icon: BookOpen, route: '/(tabs)/study' },
+  { label: 'Events & Hackathons', icon: CalendarDays, route: '/(tabs)/events' },
+  { label: 'Tasks', icon: CheckCircle2, route: '/(tabs)/tasks' },
+  { label: 'Goals', icon: Flag, route: '/(tabs)/goals' },
+  { label: 'Books', icon: Book, route: '/modules/books' },
+  { label: 'Podcasts', icon: Headphones, route: '/modules/podcasts' },
+  { label: 'Placement Drive', icon: Briefcase, route: '/modules/placement' },
+  { label: 'Exercise', icon: Activity, route: '/modules/exercise' },
+  { label: 'Daily Reflection', icon: Edit3, route: '/modules/reflection' },
+  { label: 'Analytics', icon: TrendingUp, route: '/modules/analytics' },
+  { label: 'Badge Collection', icon: Award, route: '/modules/badges' },
+  { label: 'Custom Sections', icon: LayoutGrid, route: '/modules/custom-sections' },
+  { label: 'Profile', icon: User, route: '/(tabs)/profile' },
 ];
 
 export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
@@ -139,15 +156,15 @@ export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
           {/* Logo Row */}
           <View style={styles.header}>
             <View style={styles.logoRow}>
-              <Text style={[styles.logoText, { color: colors.text }]}>🌸 Inflorescence</Text>
+              <Text style={[styles.logoText, { color: colors.text }]}>Inflorescence</Text>
               <Pressable onPress={onClose} hitSlop={12}>
-                <MaterialIcons name="close" size={22} color={colors.textSecondary} />
+                <X size={22} color={colors.textSecondary} />
               </Pressable>
             </View>
 
             {/* Search Bar */}
             <View style={[styles.searchContainer, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}>
-              <MaterialIcons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
+              <Search size={18} color={colors.textMuted} strokeWidth={2} />
               <TextInput
                 value={search}
                 onChangeText={setSearch}
@@ -159,7 +176,7 @@ export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
               />
               {search.length > 0 && (
                 <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                  <MaterialIcons name="cancel" size={16} color={colors.textMuted} />
+                  <X size={16} color={colors.textMuted} strokeWidth={2} />
                 </Pressable>
               )}
             </View>
@@ -185,24 +202,26 @@ export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
                     style={[
                       styles.menuItem,
                       isSelected && { 
-                        backgroundColor: 'rgba(41,182,246,0.15)',
-                        borderColor: colors.accent 
+                        backgroundColor: colors.accent + '18',
+                        borderColor: colors.accent + '40' 
                       }
                     ]}
                     onPress={() => handleNavigate(item.route)}
                   >
-                    <Text style={styles.menuEmoji}>{item.emoji}</Text>
-                    <Text 
-                      style={[
-                        styles.menuLabel, 
-                        { 
-                          color: isSelected ? colors.accent : colors.text,
-                          fontWeight: isSelected ? '700' : '500'
-                        }
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
+                    <View style={styles.menuIconWrapper}>
+                    <item.icon size={18} color={isSelected ? colors.accent : colors.textMuted} />
+                  </View>
+                  <Text 
+                    style={[
+                      styles.menuLabel, 
+                      { 
+                        color: isSelected ? colors.accent : colors.text,
+                        fontWeight: isSelected ? '700' : '500'
+                      }
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
                     {isSelected && (
                       <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />
                     )}
@@ -265,7 +284,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoText: {
-    fontFamily: 'Arial',
     fontSize: 20,
     fontWeight: '700',
   },
@@ -302,11 +320,14 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     gap: Spacing.md,
   },
-  menuEmoji: {
-    fontSize: 18,
+  menuIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuLabel: {
-    fontFamily: 'Arial',
     fontSize: 14,
   },
   activeIndicator: {
@@ -345,7 +366,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(41,182,246,0.3)',
   },
   avatarText: {
-    color: '#0288D1',
     fontWeight: '700',
     fontSize: 13,
   },
@@ -355,10 +375,8 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'Arial',
   },
   userEmail: {
     fontSize: 11,
-    fontFamily: 'Arial',
   },
 });

@@ -3,22 +3,32 @@ import {
   View, Text, ScrollView, StyleSheet, Pressable, StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import {
+  Award, CheckCircle2, Flag, Zap, Moon, Sun, LogOut,
+  ChevronRight, BookOpen, BarChart2, Trophy, Settings,
+  GraduationCap, Shield, Bell, Download, User,
+} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth, useAlert } from '@/template';
 import { useTasks } from '@/hooks/useTasks';
 import { useBadges } from '@/hooks/useBadges';
-import { useMood } from '@/hooks/useMood';
 import { useGoals } from '@/hooks/useGoals';
 import { useEvents } from '@/hooks/useEvents';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius, MODULE_ROUTES, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { BadgePill } from '@/components/ui/BadgePill';
-import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { BADGE_MILESTONES, BADGE_EMOJIS } from '@/services/badgesService';
-import { MOOD_OPTIONS } from '@/services/moodService';
+import { BADGE_MILESTONES } from '@/services/badgesService';
+
+function getLevelInfo(completedTasks: number) {
+  if (completedTasks >= 1000) return { label: 'Legend', color: Colors.error, xp: 1000 };
+  if (completedTasks >= 500) return { label: 'Master', color: '#A855F7', xp: 500 };
+  if (completedTasks >= 250) return { label: 'Diamond', color: Colors.accent, xp: 250 };
+  if (completedTasks >= 100) return { label: 'Gold', color: Colors.warning, xp: 100 };
+  if (completedTasks >= 50) return { label: 'Silver', color: '#94A3B8', xp: 50 };
+  if (completedTasks >= 10) return { label: 'Bronze', color: '#CD7F32', xp: 10 };
+  return { label: 'Beginner', color: Colors.success, xp: 0 };
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -28,7 +38,6 @@ export default function ProfileScreen() {
   const { showAlert } = useAlert();
   const { tasks } = useTasks();
   const { badges } = useBadges();
-  const { recentMoods } = useMood();
   const { shortGoals, longGoals, dreams } = useGoals();
   const { hackathons } = useEvents();
 
@@ -36,20 +45,16 @@ export default function ProfileScreen() {
   const totalTasks = tasks.length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const completedGoals = shortGoals.filter(g => g.completed).length;
+  const levelInfo = getLevelInfo(completedTasks);
 
-  // Badge progress
   const nextMilestone = BADGE_MILESTONES.find(m => m.count > completedTasks);
   const prevMilestone = BADGE_MILESTONES.filter(m => m.count <= completedTasks).pop();
   const badgeProgress = nextMilestone
     ? ((completedTasks - (prevMilestone?.count ?? 0)) / (nextMilestone.count - (prevMilestone?.count ?? 0))) * 100
     : 100;
 
-  // Badge counts by type
-  const badgeCounts: Record<string, number> = {};
-  badges.forEach(b => { badgeCounts[b.type] = (badgeCounts[b.type] ?? 0) + 1; });
-
-  // Mood trend
-  const moodTrend = recentMoods.slice(0, 7).reverse();
+  const displayName = user?.username ?? user?.email?.split('@')[0] ?? 'Champion';
+  const initials = displayName.slice(0, 2).toUpperCase();
 
   const handleLogout = () => {
     showAlert('Sign Out', 'Are you sure you want to sign out?', [
@@ -58,175 +63,122 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const displayName = user?.username ?? user?.email?.split('@')[0] ?? 'Champion';
-  const initials = displayName.slice(0, 2).toUpperCase();
+  const statsData = [
+    { label: 'Tasks Done', value: completedTasks, color: Colors.success },
+    { label: 'Total Tasks', value: totalTasks, color: colors.accent },
+    { label: 'Badges', value: badges.length, color: Colors.warning },
+    { label: 'Goals Set', value: shortGoals.length + longGoals.length, color: '#8B5CF6' },
+    { label: 'Dreams', value: dreams.length, color: Colors.error },
+    { label: 'Events', value: hackathons.length, color: Colors.warning },
+  ];
+
+  const settingsItems = [
+    { label: mode === 'dark' ? 'Light Mode' : 'Dark Mode', icon: mode === 'dark' ? Sun : Moon, onPress: toggleTheme, color: colors.accent },
+    { label: 'Badge Collection', icon: Trophy, onPress: () => router.push('/modules/badges'), color: Colors.warning },
+    { label: 'Analytics', icon: BarChart2, onPress: () => router.push('/modules/analytics'), color: colors.accent },
+    { label: 'Notifications', icon: Bell, onPress: () => {}, color: '#8B5CF6' },
+    { label: 'Sign Out', icon: LogOut, onPress: handleLogout, color: Colors.error },
+  ];
 
   return (
     <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 80 }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
+
         {/* Profile Header */}
-        <GlassCard style={styles.profileCard} glow>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarInitials}>{initials}</Text>
+        <View style={styles.profileHeader}>
+          <View style={[styles.avatar, { backgroundColor: colors.accent + '20', borderColor: colors.accent + '40' }]}>
+            <Text style={[styles.avatarInitials, { color: colors.accent }]}>{initials}</Text>
           </View>
-          <Text style={styles.profileName}>{displayName}</Text>
-          <Text style={styles.profileEmail}>{user?.email}</Text>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelText}>
-              {completedTasks >= 1000 ? '🌟 Legend' :
-               completedTasks >= 500 ? '👑 Master' :
-               completedTasks >= 250 ? '💎 Diamond' :
-               completedTasks >= 100 ? '🥇 Gold' :
-               completedTasks >= 50 ? '🥈 Silver' :
-               completedTasks >= 10 ? '🥉 Bronze' : '🌱 Beginner'}
-            </Text>
+          <View style={styles.profileInfo}>
+            <Text style={[styles.profileName, { color: colors.text }]}>{displayName}</Text>
+            <Text style={[styles.profileEmail, { color: colors.textMuted }]}>{user?.email}</Text>
+            <View style={[styles.levelBadge, { backgroundColor: levelInfo.color + '18', borderColor: levelInfo.color + '40' }]}>
+              <Zap size={12} color={levelInfo.color} strokeWidth={2} />
+              <Text style={[styles.levelText, { color: levelInfo.color }]}>{levelInfo.label}</Text>
+            </View>
           </View>
-        </GlassCard>
+        </View>
+
+        {/* XP Progress */}
+        {nextMilestone && (
+          <GlassCard style={[styles.xpCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.xpHeader}>
+              <Text style={[styles.xpLabel, { color: colors.textSecondary }]}>Next: {nextMilestone.name}</Text>
+              <Text style={[styles.xpValue, { color: colors.accent }]}>{completedTasks}/{nextMilestone.count}</Text>
+            </View>
+            <ProgressBar progress={badgeProgress} color={colors.accent} height={6} backgroundColor={colors.surfaceLight} />
+            <Text style={[styles.xpSub, { color: colors.textMuted }]}>{nextMilestone.count - completedTasks} tasks to unlock next badge</Text>
+          </GlassCard>
+        )}
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          {[
-            { label: 'Tasks Done', value: completedTasks, icon: 'check-circle', color: Colors.success },
-            { label: 'Total Tasks', value: totalTasks, icon: 'list', color: Colors.accent },
-            { label: 'Badges', value: badges.length, icon: 'military-tech', color: Colors.badge.gold },
-            { label: 'Goals Set', value: shortGoals.length + longGoals.length, icon: 'flag', color: Colors.primaryLight },
-            { label: 'Dreams', value: dreams.length, icon: 'auto-awesome', color: Colors.badge.master },
-            { label: 'Events', value: hackathons.length, icon: 'event', color: Colors.warning },
-          ].map(s => (
-            <GlassCard key={s.label} style={styles.statCard}>
-              <MaterialIcons name={s.icon as any} size={22} color={s.color} />
-              <Text style={[styles.statNumber, { color: s.color }]}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
+          {statsData.map((s, i) => (
+            <GlassCard key={i} style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]} padding={14}>
+              <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>{s.label}</Text>
             </GlassCard>
           ))}
         </View>
 
-        {/* Badge Progress */}
-        <GlassCard style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Badge Journey</Text>
-          {nextMilestone ? (
-            <>
-              <View style={styles.badgeProgressRow}>
-                <Text style={styles.badgeProgressText}>
-                  {completedTasks} / {nextMilestone.count} tasks → {nextMilestone.name}
-                </Text>
-                <Text style={styles.badgeProgressNext}>{BADGE_EMOJIS[nextMilestone.type]}</Text>
-              </View>
-              <ProgressBar progress={badgeProgress} color={Colors.badge[nextMilestone.type] ?? Colors.accent} height={8} />
-              <Text style={styles.badgeProgressSub}>
-                {nextMilestone.count - completedTasks} more tasks to unlock {nextMilestone.name}!
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.legendText}>🌟 You have reached Legend status!</Text>
-          )}
-        </GlassCard>
-
-        {/* Badge Showcase */}
-        {badges.length > 0 ? (
-          <GlassCard style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>My Achievements ({badges.length})</Text>
-            <View style={styles.badgesGrid}>
-              {Object.entries(badgeCounts).map(([type, count]) => (
-                <View key={type} style={styles.badgeItem}>
-                  <BadgePill type={type} size="lg" />
-                  {count > 1 ? <Text style={styles.badgeCount}>x{count}</Text> : null}
-                </View>
-              ))}
-            </View>
-            <Text style={styles.latestBadgeLabel}>Latest Earned</Text>
-            <View style={styles.latestBadgesRow}>
-              {badges.slice(0, 5).map(b => (
-                <View key={b.id} style={styles.latestBadge}>
-                  <Text style={styles.latestBadgeEmoji}>{BADGE_EMOJIS[b.type] ?? '🏅'}</Text>
-                  <Text style={styles.latestBadgeName} numberOfLines={1}>{b.name}</Text>
-                  <Text style={styles.latestBadgeModule}>{b.module}</Text>
-                </View>
-              ))}
-            </View>
-          </GlassCard>
-        ) : (
-          <GlassCard style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>My Achievements</Text>
-            <Text style={styles.noBadgesText}>Complete 10 tasks to earn your first badge! 🏅</Text>
-          </GlassCard>
-        )}
-
-        {/* Mood Trend */}
-        {moodTrend.length > 0 ? (
-          <GlassCard style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Mood Trend (Last 7 Days)</Text>
-            <View style={styles.moodTrendRow}>
-              {moodTrend.map(m => {
-                const opt = MOOD_OPTIONS.find(o => o.label === m.mood);
-                return (
-                  <View key={m.id} style={styles.moodTrendItem}>
-                    <Text style={styles.moodTrendEmoji}>{opt?.emoji ?? '😐'}</Text>
-                    <Text style={styles.moodTrendDate}>
-                      {new Date(m.date).toLocaleDateString('en-US', { weekday: 'short' })}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          </GlassCard>
-        ) : null}
-
-        {/* Overall Progress */}
-        <GlassCard style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Overall Progress</Text>
+        {/* Progress Section */}
+        <GlassCard style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Progress Overview</Text>
           <View style={styles.progressItem}>
-            <Text style={styles.progressItemLabel}>Task Completion</Text>
-            <Text style={styles.progressItemValue}>{completionRate}%</Text>
+            <Text style={[styles.progressItemLabel, { color: colors.textSecondary }]}>Task Completion</Text>
+            <Text style={[styles.progressItemValue, { color: colors.accent }]}>{completionRate}%</Text>
           </View>
-          <ProgressBar progress={completionRate} color={Colors.accent} height={6} />
+          <ProgressBar progress={completionRate} color={colors.accent} height={6} backgroundColor={colors.surfaceLight} />
           <View style={[styles.progressItem, { marginTop: Spacing.md }]}>
-            <Text style={styles.progressItemLabel}>Goals Completed</Text>
-            <Text style={styles.progressItemValue}>{completedGoals}/{shortGoals.length}</Text>
+            <Text style={[styles.progressItemLabel, { color: colors.textSecondary }]}>Goals Completed</Text>
+            <Text style={[styles.progressItemValue, { color: '#22C55E' }]}>{completedGoals}/{shortGoals.length}</Text>
           </View>
-          <ProgressBar progress={shortGoals.length > 0 ? (completedGoals / shortGoals.length) * 100 : 0} color={Colors.primaryLight} height={6} />
+          <ProgressBar progress={shortGoals.length > 0 ? (completedGoals / shortGoals.length) * 100 : 0} color="#22C55E" height={6} backgroundColor={colors.surfaceLight} />
         </GlassCard>
 
-        {/* Growth Modules Hub */}
-        <GlassCard style={styles.sectionCard}>
+        {/* Growth Modules */}
+        <GlassCard style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Growth Modules</Text>
           <View style={styles.modulesGrid}>
             {MODULE_ROUTES.map(m => (
-              <Pressable key={m.key} style={[styles.moduleTile, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]} onPress={() => router.push(m.route as any)}>
-                <MaterialIcons name={m.icon as any} size={24} color={m.color} />
-                <Text style={[styles.moduleLabel, { color: colors.textSecondary }]}>{m.title}</Text>
+              <Pressable
+                key={m.key}
+                style={({ pressed }) => [styles.moduleTile, { backgroundColor: colors.surfaceLight, borderColor: colors.border }, pressed && { opacity: 0.7 }]}
+                onPress={() => router.push(m.route as any)}
+              >
+                <View style={[styles.moduleIconBox, { backgroundColor: m.color + '18' }]}>
+                  <BookOpen size={18} color={m.color} strokeWidth={2} />
+                </View>
+                <Text style={[styles.moduleLabel, { color: colors.textSecondary }]} numberOfLines={1}>{m.title}</Text>
               </Pressable>
             ))}
           </View>
         </GlassCard>
 
-        {/* Theme Toggle */}
-        <GlassCard style={styles.sectionCard}>
-          <Pressable style={styles.themeRow} onPress={toggleTheme}>
-            <MaterialIcons name={mode === 'dark' ? 'dark-mode' : 'light-mode'} size={24} color={colors.accent} />
-            <Text style={[styles.themeText, { color: colors.text }]}>{mode === 'dark' ? 'Dark Mode' : 'Light Mode'}</Text>
-            <Text style={[styles.themeHint, { color: colors.textMuted }]}>Tap to switch</Text>
-          </Pressable>
+        {/* Settings */}
+        <GlassCard style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]} padding={0}>
+          <Text style={[styles.sectionTitle, { color: colors.text, padding: Spacing.base, paddingBottom: Spacing.sm }]}>Settings</Text>
+          {settingsItems.map((item, idx) => (
+            <Pressable
+              key={idx}
+              style={({ pressed }) => [
+                styles.settingsRow,
+                { borderTopWidth: idx > 0 ? 1 : 0, borderTopColor: colors.border },
+                pressed && { backgroundColor: colors.surfaceLight },
+              ]}
+              onPress={item.onPress}
+            >
+              <View style={[styles.settingsIconBox, { backgroundColor: item.color + '18' }]}>
+                <item.icon size={16} color={item.color} strokeWidth={2} />
+              </View>
+              <Text style={[styles.settingsLabel, { color: item.color === Colors.error ? Colors.error : colors.text }]}>{item.label}</Text>
+              <ChevronRight size={16} color={colors.textDim} strokeWidth={2} />
+            </Pressable>
+          ))}
         </GlassCard>
 
-        {/* Sign Out */}
-        <PrimaryButton
-          title="View Badge Collection"
-          onPress={() => router.push('/modules/badges')}
-          variant="secondary"
-          style={{ marginBottom: Spacing.sm }}
-        />
-        <PrimaryButton
-          title="Sign Out"
-          onPress={handleLogout}
-          variant="danger"
-          style={styles.signOutBtn}
-        />
-        <Text style={styles.versionText}>Inflorescence v1.0 · Your Personal Life OS</Text>
+        <Text style={[styles.version, { color: colors.textDim }]}>Inflorescence v1.0 · Personal Growth OS</Text>
       </ScrollView>
     </View>
   );
@@ -234,48 +186,43 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  profileCard: { alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.lg },
-  avatarLarge: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(41,182,246,0.15)', borderWidth: 2, borderColor: Colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
-  avatarInitials: { color: Colors.accent, fontFamily: 'Arial', fontSize: Typography.sizes.xxl, fontWeight: '700' },
-  profileName: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xl, fontWeight: '700' },
-  profileEmail: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  levelBadge: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.xs, borderRadius: Radius.full, backgroundColor: 'rgba(41,182,246,0.12)', borderWidth: 1, borderColor: Colors.border },
-  levelText: { color: Colors.accent, fontFamily: 'Arial', fontSize: Typography.sizes.base, fontWeight: '700' },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
-  statCard: { width: '30.5%', alignItems: 'center', padding: Spacing.md, gap: Spacing.xs },
-  statNumber: { fontFamily: 'Arial', fontSize: Typography.sizes.xl, fontWeight: '700' },
-  statLabel: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.xs, textAlign: 'center' },
-  sectionCard: { marginBottom: Spacing.md, gap: Spacing.md },
-  sectionTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.lg, fontWeight: '700' },
-  badgeProgressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  badgeProgressText: { color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  badgeProgressNext: { fontSize: 24 },
-  badgeProgressSub: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  legendText: { color: Colors.badge.legend, fontFamily: 'Arial', fontSize: Typography.sizes.base, fontWeight: '700', textAlign: 'center', padding: Spacing.sm },
-  badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
-  badgeItem: { alignItems: 'center', gap: Spacing.xs },
-  badgeCount: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.xs, fontWeight: '600' },
-  latestBadgeLabel: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
-  latestBadgesRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
-  latestBadge: { alignItems: 'center', width: 56, gap: 2 },
-  latestBadgeEmoji: { fontSize: 28 },
-  latestBadgeName: { color: Colors.textSecondary, fontFamily: 'Arial', fontSize: 9, textAlign: 'center' },
-  latestBadgeModule: { color: Colors.textDim, fontFamily: 'Arial', fontSize: 9 },
-  noBadgesText: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.base, textAlign: 'center', padding: Spacing.sm },
-  moodTrendRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  moodTrendItem: { alignItems: 'center', gap: Spacing.xs },
-  moodTrendEmoji: { fontSize: 22 },
-  moodTrendDate: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.xs },
+  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.lg },
+
+  profileHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.base, marginBottom: Spacing.lg },
+  avatar: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  avatarInitials: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold },
+  profileInfo: { flex: 1, gap: 4 },
+  profileName: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold },
+  profileEmail: { fontSize: Typography.sizes.sm },
+  levelBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.full, borderWidth: 1 },
+  levelText: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.semibold },
+
+  xpCard: { marginBottom: Spacing.base, gap: Spacing.sm },
+  xpHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  xpLabel: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.medium },
+  xpValue: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.bold },
+  xpSub: { fontSize: Typography.sizes.xs },
+
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
+  statCard: { width: '30.5%', alignItems: 'center', gap: 4 },
+  statValue: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold },
+  statLabel: { fontSize: Typography.sizes.xs, textAlign: 'center' },
+
+  sectionCard: { marginBottom: Spacing.base, gap: Spacing.md },
+  sectionTitle: { fontSize: Typography.sizes.base, fontWeight: Typography.weights.bold },
+
   progressItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  progressItemLabel: { color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  progressItemValue: { color: Colors.accent, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '700' },
-  signOutBtn: { width: '100%', marginTop: Spacing.sm, marginBottom: Spacing.sm },
+  progressItemLabel: { fontSize: Typography.sizes.sm },
+  progressItemValue: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.bold },
+
   modulesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  moduleTile: { width: '30%', alignItems: 'center', padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, gap: Spacing.xs },
-  moduleLabel: { fontFamily: 'Arial', fontSize: Typography.sizes.xs, textAlign: 'center', fontWeight: '600' },
-  themeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  themeText: { flex: 1, fontFamily: 'Arial', fontSize: Typography.sizes.base, fontWeight: '600' },
-  themeHint: { fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  versionText: { color: Colors.textDim, fontFamily: 'Arial', fontSize: Typography.sizes.xs, textAlign: 'center', marginBottom: Spacing.base },
+  moduleTile: { width: '30.5%', alignItems: 'center', padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, gap: Spacing.xs },
+  moduleIconBox: { width: 36, height: 36, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
+  moduleLabel: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.semibold, textAlign: 'center' },
+
+  settingsRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingHorizontal: Spacing.base, paddingVertical: 14 },
+  settingsIconBox: { width: 34, height: 34, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
+  settingsLabel: { flex: 1, fontSize: Typography.sizes.base, fontWeight: Typography.weights.medium },
+
+  version: { fontSize: Typography.sizes.xs, textAlign: 'center', marginBottom: Spacing.base },
 });

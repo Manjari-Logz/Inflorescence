@@ -5,11 +5,20 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Zap, BookOpen, CheckSquare, Target, Activity, Trophy } from 'lucide-react-native';
 import { useAuth, useAlert } from '@/template';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius } from '@/constants/theme';
 import { AppInput } from '@/components/ui/AppInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+
+const FEATURES = [
+  { label: 'Tasks', icon: CheckSquare, color: '#3B82F6' },
+  { label: 'Study', icon: BookOpen, color: '#8B5CF6' },
+  { label: 'Goals', icon: Target, color: '#22C55E' },
+  { label: 'Exercise', icon: Activity, color: '#F59E0B' },
+  { label: 'Badges', icon: Trophy, color: '#F59E0B' },
+];
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -45,25 +54,35 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={[styles.root, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
+    <KeyboardAvoidingView
+      style={[styles.root, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32, paddingTop: insets.top + 20 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.heroSection, { paddingTop: insets.top + 20 }]}>
-          <View style={[styles.logoContainer, { borderColor: colors.borderStrong, backgroundColor: colors.primary + '22' }]}>
-            <Text style={styles.logoEmoji}>🌸</Text>
+        {/* Logo / Hero */}
+        <View style={styles.hero}>
+          <View style={[styles.logoMark, { backgroundColor: colors.accent + '18', borderColor: colors.accent + '30' }]}>
+            <Zap size={32} color={colors.accent} strokeWidth={2} />
           </View>
           <Text style={[styles.appName, { color: colors.text }]}>Inflorescence</Text>
-          <Text style={[styles.tagline, { color: colors.textSecondary }]}>Your Personal Growth Operating System</Text>
+          <Text style={[styles.tagline, { color: colors.textMuted }]}>Personal Growth Operating System</Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.border }]}>
-          <View style={[styles.tabRow, { backgroundColor: colors.surfaceLight }]}>
+        {/* Auth Card */}
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {/* Tab switcher */}
+          <View style={[styles.tabRow, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}>
             {(['login', 'register', 'otp'] as const).map(m => (
-              <Pressable key={m} style={[styles.tab, mode === m && { backgroundColor: colors.primary }]} onPress={() => setMode(m)}>
+              <Pressable
+                key={m}
+                style={[styles.tab, mode === m && { backgroundColor: colors.accent }]}
+                onPress={() => setMode(m)}
+              >
                 <Text style={[styles.tabText, { color: mode === m ? '#fff' : colors.textMuted }]}>
                   {m === 'login' ? 'Sign In' : m === 'register' ? 'Sign Up' : 'OTP'}
                 </Text>
@@ -72,49 +91,76 @@ export default function LoginScreen() {
           </View>
 
           <Text style={[styles.cardTitle, { color: colors.text }]}>
-            {mode === 'login' ? 'Welcome back' : mode === 'register' ? 'Create account' : 'Sign in with OTP'}
+            {mode === 'login' ? 'Welcome back' : mode === 'register' ? 'Create account' : 'Magic link'}
           </Text>
           <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
-            {mode === 'otp' ? 'We\'ll send a verification code to your email' : mode === 'login' ? 'Sign in to continue your journey' : 'Start your productivity journey today'}
+            {mode === 'otp'
+              ? 'We\'ll send a verification code to your email'
+              : mode === 'login'
+              ? 'Sign in to continue your journey'
+              : 'Start your productivity journey today'}
           </Text>
 
           <View style={styles.form}>
-            <AppInput label="Email" placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-            {mode !== 'otp' ? (
-              <AppInput label="Password" placeholder="Min 6 characters" secureTextEntry value={password} onChangeText={setPassword} />
-            ) : null}
-            {mode === 'register' ? (
-              <AppInput label="Confirm Password" placeholder="Re-enter password" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
-            ) : null}
+            <AppInput
+              label="Email"
+              placeholder="you@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+            {mode !== 'otp' && (
+              <AppInput
+                label="Password"
+                placeholder="Min 6 characters"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            )}
+            {mode === 'register' && (
+              <AppInput
+                label="Confirm Password"
+                placeholder="Re-enter password"
+                secureTextEntry
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+            )}
 
             <PrimaryButton
-              title={mode === 'login' ? 'Sign In' : mode === 'register' ? 'Create Account' : 'Send OTP Code'}
+              title={mode === 'login' ? 'Sign In' : mode === 'register' ? 'Create Account' : 'Send Code'}
               onPress={mode === 'login' ? handleLogin : mode === 'register' ? handleRegister : handleSendOTP}
               loading={operationLoading}
               style={styles.submitBtn}
             />
 
-            {mode === 'login' ? (
+            {mode === 'login' && (
               <Pressable onPress={() => router.push('/forgot-password')} style={styles.forgotRow}>
-                <Text style={[styles.forgotText, { color: colors.accent }]}>Forgot Password?</Text>
+                <Text style={[styles.forgotText, { color: colors.accent }]}>Forgot password?</Text>
               </Pressable>
-            ) : null}
+            )}
           </View>
 
           <View style={styles.switchRow}>
             <Text style={[styles.switchText, { color: colors.textMuted }]}>
-              {mode === 'login' ? 'New to Inflorescence? ' : 'Already have an account? '}
+              {mode === 'login' ? 'New here? ' : 'Already have an account? '}
             </Text>
             <Pressable onPress={() => setMode(mode === 'login' ? 'register' : 'login')}>
-              <Text style={[styles.switchLink, { color: colors.accent }]}>{mode === 'login' ? 'Sign Up' : 'Sign In'}</Text>
+              <Text style={[styles.switchLink, { color: colors.accent }]}>
+                {mode === 'login' ? 'Sign Up' : 'Sign In'}
+              </Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={styles.features}>
-          {['🏆 Badges', '📚 Study', '🎯 Goals', '📅 Events', '😊 Mood', '📖 Books'].map(f => (
-            <View key={f} style={[styles.featurePill, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}>
-              <Text style={[styles.featureText, { color: colors.textSecondary }]}>{f}</Text>
+        {/* Feature Chips */}
+        <View style={styles.featuresRow}>
+          {FEATURES.map(f => (
+            <View key={f.label} style={[styles.featureChip, { backgroundColor: f.color + '12', borderColor: f.color + '30' }]}>
+              <f.icon size={12} color={f.color} strokeWidth={2} />
+              <Text style={[styles.featureText, { color: f.color }]}>{f.label}</Text>
             </View>
           ))}
         </View>
@@ -126,25 +172,82 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flexGrow: 1, paddingHorizontal: Spacing.base },
-  heroSection: { alignItems: 'center', paddingBottom: Spacing.xxl },
-  logoContainer: { width: 88, height: 88, borderRadius: 44, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.base },
-  logoEmoji: { fontSize: 44 },
-  appName: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.xxxl, fontWeight: Typography.weights.bold, letterSpacing: 0.5 },
-  tagline: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, marginTop: Spacing.xs, textAlign: 'center' },
-  card: { borderRadius: Radius.xl, borderWidth: 1, padding: Spacing.xl, marginBottom: Spacing.xl },
-  tabRow: { flexDirection: 'row', borderRadius: Radius.md, padding: 4, marginBottom: Spacing.xl },
-  tab: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.sm },
-  tabText: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, fontWeight: Typography.weights.medium },
-  cardTitle: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold, marginBottom: Spacing.xs },
-  cardSubtitle: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, marginBottom: Spacing.xl },
+
+  hero: { alignItems: 'center', paddingBottom: Spacing.xxl, gap: Spacing.sm },
+  logoMark: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  appName: {
+    fontSize: Typography.sizes.xxxl,
+    fontWeight: Typography.weights.bold,
+    letterSpacing: -0.5,
+  },
+  tagline: {
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
+  },
+
+  card: {
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    padding: Spacing.xl,
+    marginBottom: Spacing.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    borderRadius: Radius.md,
+    padding: 4,
+    marginBottom: Spacing.xl,
+    borderWidth: 1,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+    borderRadius: Radius.sm,
+  },
+  tabText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+  },
+  cardTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginBottom: Spacing.xs,
+  },
+  cardSubtitle: {
+    fontSize: Typography.sizes.sm,
+    marginBottom: Spacing.xl,
+    lineHeight: 20,
+  },
   form: { gap: Spacing.xs },
   submitBtn: { marginTop: Spacing.sm, width: '100%' },
   forgotRow: { alignItems: 'center', marginTop: Spacing.md },
-  forgotText: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, fontWeight: '600' },
+  forgotText: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.lg },
-  switchText: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm },
-  switchLink: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
-  features: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.sm },
-  featurePill: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.full, borderWidth: 1 },
-  featureText: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm },
+  switchText: { fontSize: Typography.sizes.sm },
+  switchLink: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
+
+  featuresRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.sm },
+  featureChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  featureText: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.semibold },
 });

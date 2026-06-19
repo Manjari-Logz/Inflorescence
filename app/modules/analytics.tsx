@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, StatusBar, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BookOpen, Target, TrendingUp, Smile, Briefcase, Timer, BarChart2 } from 'lucide-react-native';
 import { useAuth } from '@/template';
 import { useStudy } from '@/hooks/useStudy';
 import { useBooks } from '@/hooks/useModules';
@@ -17,6 +18,19 @@ import { analyticsService } from '@/services/analyticsService';
 import { MOOD_OPTIONS } from '@/services/moodService';
 
 const chartWidth = Dimensions.get('window').width - 64;
+
+function StatRow({ items, colors }: { items: { label: string; value: string | number }[]; colors: any }) {
+  return (
+    <View style={styles.statRow}>
+      {items.map((s, i) => (
+        <View key={i} style={styles.stat}>
+          <Text style={[styles.statValue, { color: colors.accent }]}>{s.value}</Text>
+          <Text style={[styles.statLabel, { color: colors.textMuted }]}>{s.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
@@ -43,84 +57,122 @@ export default function AnalyticsScreen() {
   const placement = analyticsService.computePlacementAnalytics(companies);
 
   const moodChartData = {
-    labels: MOOD_OPTIONS.map(m => m.emoji),
+    labels: MOOD_OPTIONS.map(m => m.label.slice(0, 3)),
     datasets: [{ data: MOOD_OPTIONS.map(m => mood.distribution[m.label] ?? 0) }],
   };
 
   const chartConfig = {
     backgroundColor: colors.surface,
     backgroundGradientFrom: colors.surfaceLight,
-    backgroundGradientTo: colors.surface,
+    backgroundGradientTo: colors.surfaceLight,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(41, 182, 246, ${opacity})`,
+    color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
     labelColor: () => colors.textMuted,
     style: { borderRadius: Radius.lg },
+    barPercentage: 0.6,
   };
+
+  const sections = [
+    {
+      title: 'Study',
+      icon: BookOpen,
+      color: colors.accent,
+      stats: [
+        { label: 'Domains', value: study.domains },
+        { label: 'Subjects', value: study.totalSubjects },
+        { label: 'Resources', value: study.totalResources },
+        { label: 'Hours', value: study.totalHours },
+      ],
+    },
+    {
+      title: 'Reading',
+      icon: BookOpen,
+      color: '#8B5CF6',
+      stats: [
+        { label: 'Books', value: reading.totalBooks },
+        { label: 'Completed', value: reading.completed },
+        { label: 'Pages Read', value: reading.pagesRead },
+        { label: 'Progress', value: `${reading.progress}%` },
+      ],
+      progress: reading.progress,
+    },
+    {
+      title: 'Goals',
+      icon: Target,
+      color: '#22C55E',
+      stats: [
+        { label: 'Short Goals', value: `${goals.shortCompleted}/${goals.shortTotal}` },
+        { label: 'Long Goals', value: goals.longTotal },
+        { label: 'Dreams', value: goals.dreams },
+      ],
+      progress: goals.shortTotal > 0 ? (goals.shortCompleted / goals.shortTotal) * 100 : 0,
+    },
+    {
+      title: 'Placement',
+      icon: Briefcase,
+      color: '#F59E0B',
+      stats: [
+        { label: 'Companies', value: placement.total },
+        { label: 'Offers', value: placement.offers },
+        { label: 'Response Rate', value: `${placement.responseRate}%` },
+      ],
+    },
+    {
+      title: 'Focus',
+      icon: Timer,
+      color: colors.accent,
+      stats: [
+        { label: 'Sessions', value: pomodoro.sessions },
+        { label: 'Minutes', value: pomodoro.totalMinutes },
+      ],
+    },
+  ];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
       <ScreenHeader title="Analytics" subtitle="Your growth insights" showBack />
 
       {loading ? <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} /> : (
         <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: insets.bottom + 40, gap: Spacing.md }}>
-          <GlassCard style={{ backgroundColor: colors.glass, borderColor: colors.border, gap: Spacing.sm }}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>📚 Study Analytics</Text>
-            <View style={styles.statRow}>
-              <Stat label="Domains" value={study.domains} colors={colors} />
-              <Stat label="Subjects" value={study.totalSubjects} colors={colors} />
-              <Stat label="Resources" value={study.totalResources} colors={colors} />
-              <Stat label="Hours" value={study.totalHours} colors={colors} />
-            </View>
-          </GlassCard>
+          {sections.map((section, idx) => (
+            <GlassCard key={idx} style={{ backgroundColor: colors.surface, borderColor: colors.border, gap: Spacing.md }}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionIcon, { backgroundColor: section.color + '18' }]}>
+                  <section.icon size={18} color={section.color} strokeWidth={2} />
+                </View>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>{section.title} Analytics</Text>
+              </View>
+              <StatRow items={section.stats} colors={colors} />
+              {section.progress !== undefined && (
+                <ProgressBar progress={section.progress} color={section.color} height={5} backgroundColor={colors.surfaceLight} />
+              )}
+            </GlassCard>
+          ))}
 
-          <GlassCard style={{ backgroundColor: colors.glass, borderColor: colors.border, gap: Spacing.sm }}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>📖 Reading Analytics</Text>
-            <View style={styles.statRow}>
-              <Stat label="Books" value={reading.totalBooks} colors={colors} />
-              <Stat label="Completed" value={reading.completed} colors={colors} />
-              <Stat label="Pages" value={reading.pagesRead} colors={colors} />
+          {/* Mood Chart */}
+          <GlassCard style={{ backgroundColor: colors.surface, borderColor: colors.border, gap: Spacing.md }}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: '#F59E0B18' }]}>
+                <Smile size={18} color="#F59E0B" strokeWidth={2} />
+              </View>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Mood Analytics</Text>
             </View>
-            <ProgressBar progress={reading.progress} color={colors.accent} height={6} />
-            <Text style={[styles.progressLabel, { color: colors.textMuted }]}>{reading.progress}% reading progress</Text>
-          </GlassCard>
-
-          <GlassCard style={{ backgroundColor: colors.glass, borderColor: colors.border, gap: Spacing.sm }}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>🎯 Goal Analytics</Text>
-            <View style={styles.statRow}>
-              <Stat label="Short Goals" value={`${goals.shortCompleted}/${goals.shortTotal}`} colors={colors} />
-              <Stat label="Long Goals" value={goals.longTotal} colors={colors} />
-              <Stat label="Dreams" value={goals.dreams} colors={colors} />
-            </View>
-            <ProgressBar progress={goals.shortTotal > 0 ? (goals.shortCompleted / goals.shortTotal) * 100 : 0} color={colors.primaryLight} height={6} />
-          </GlassCard>
-
-          <GlassCard style={{ backgroundColor: colors.glass, borderColor: colors.border, gap: Spacing.sm }}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>😊 Mood Analytics</Text>
-            <View style={styles.statRow}>
-              <Stat label="Entries" value={mood.entries} colors={colors} />
-              <Stat label="Avg Score" value={mood.avgScore} colors={colors} />
-            </View>
+            <StatRow items={[{ label: 'Entries', value: mood.entries }, { label: 'Avg Score', value: mood.avgScore }]} colors={colors} />
             {mood.entries > 0 ? (
-              <BarChart data={moodChartData} width={chartWidth} height={180} chartConfig={chartConfig} style={{ borderRadius: Radius.lg }} yAxisLabel="" yAxisSuffix="" fromZero />
-            ) : null}
-          </GlassCard>
-
-          <GlassCard style={{ backgroundColor: colors.glass, borderColor: colors.border, gap: Spacing.sm }}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>💼 Placement Analytics</Text>
-            <View style={styles.statRow}>
-              <Stat label="Companies" value={placement.total} colors={colors} />
-              <Stat label="Offers" value={placement.offers} colors={colors} />
-              <Stat label="Response" value={`${placement.responseRate}%`} colors={colors} />
-            </View>
-          </GlassCard>
-
-          <GlassCard style={{ backgroundColor: colors.glass, borderColor: colors.border, gap: Spacing.sm }}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>🍅 Focus Analytics</Text>
-            <View style={styles.statRow}>
-              <Stat label="Sessions" value={pomodoro.sessions} colors={colors} />
-              <Stat label="Minutes" value={pomodoro.totalMinutes} colors={colors} />
-            </View>
+              <BarChart
+                data={moodChartData}
+                width={chartWidth}
+                height={160}
+                chartConfig={chartConfig}
+                style={{ borderRadius: Radius.md, marginLeft: -12 }}
+                yAxisLabel=""
+                yAxisSuffix=""
+                fromZero
+              />
+            ) : (
+              <Text style={[styles.noDataText, { color: colors.textMuted }]}>Log your mood daily to see trends here</Text>
+            )}
           </GlassCard>
         </ScrollView>
       )}
@@ -128,21 +180,14 @@ export default function AnalyticsScreen() {
   );
 }
 
-function Stat({ label, value, colors }: { label: string; value: string | number; colors: ReturnType<typeof useAppTheme>['colors'] }) {
-  return (
-    <View style={styles.stat}>
-      <Text style={[styles.statValue, { color: colors.accent }]}>{value}</Text>
-      <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  cardTitle: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.lg, fontWeight: '700' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  sectionIcon: { width: 32, height: 32, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { fontSize: Typography.sizes.base, fontWeight: Typography.weights.bold },
   statRow: { flexDirection: 'row', justifyContent: 'space-around' },
-  stat: { alignItems: 'center' },
-  statValue: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.xl, fontWeight: '700' },
-  statLabel: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.xs },
-  progressLabel: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, textAlign: 'center' },
+  stat: { alignItems: 'center', gap: 3 },
+  statValue: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold },
+  statLabel: { fontSize: Typography.sizes.xs },
+  noDataText: { fontSize: Typography.sizes.sm, textAlign: 'center', paddingVertical: Spacing.md },
 });

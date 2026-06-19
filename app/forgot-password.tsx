@@ -32,7 +32,6 @@ export default function ForgotPasswordScreen() {
         <Pressable onPress={() => router.back()} style={styles.backLink}>
           <Text style={[styles.backText, { color: colors.accent }]}>← Back to Sign In</Text>
         </Pressable>
-        <Text style={styles.emoji}>🔐</Text>
         <Text style={[styles.title, { color: colors.text }]}>Forgot Password</Text>
         <Text style={[styles.sub, { color: colors.textMuted }]}>Enter your email and we'll send a reset link.</Text>
         <View style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.border }]}>
@@ -48,9 +47,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: Spacing.base },
   backLink: { marginBottom: Spacing.xl },
-  backText: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.base, fontWeight: '600' },
-  emoji: { fontSize: 48, textAlign: 'center', marginBottom: Spacing.md },
-  title: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.xxxl, fontWeight: '700', textAlign: 'center' },
-  sub: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.base, textAlign: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xxl },
+  backText: { fontSize: Typography.sizes.base, fontWeight: '600' },
+  title: { fontSize: Typography.sizes.xxxl, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.sm },
+  sub: { fontSize: Typography.sizes.base, textAlign: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xxl },
   card: { borderRadius: Radius.xl, borderWidth: 1, padding: Spacing.xl },
 });

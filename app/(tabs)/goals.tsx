@@ -4,9 +4,13 @@ import {
   KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import {
+  Target, Telescope, Star, Plus, Trash2, CheckSquare,
+  Square, CheckCircle2, Circle, X, ChevronRight,
+} from 'lucide-react-native';
 import { useAlert } from '@/template';
 import { useGoals } from '@/hooks/useGoals';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -14,34 +18,34 @@ import { AppInput } from '@/components/ui/AppInput';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ChecklistItem, Milestone } from '@/services/goalsService';
 
-const TABS = ['Short Goals', 'Long Goals', 'Dreams'];
+const TABS = [
+  { label: 'Short Term', icon: Target },
+  { label: 'Long Term', icon: Telescope },
+  { label: 'Dreams', icon: Star },
+];
 const DREAM_CATEGORIES = ['Life', 'Career', 'Travel', 'Business', 'Health', 'Education', 'Creative', 'Other'];
 
 function genId() { return Math.random().toString(36).slice(2); }
 
 export default function GoalsScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const { shortGoals, longGoals, dreams, loading, addShortGoal, updateShortGoal, deleteShortGoal, addLongGoal, updateLongGoal, deleteLongGoal, addDream, deleteDream } = useGoals();
   const { showAlert } = useAlert();
   const [activeTab, setActiveTab] = useState(0);
   const [modal, setModal] = useState<'short' | 'long' | 'dream' | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Short goal form
   const [sgTitle, setSgTitle] = useState('');
   const [sgDue, setSgDue] = useState('');
   const [sgChecklist, setSgChecklist] = useState<ChecklistItem[]>([]);
   const [sgCheckInput, setSgCheckInput] = useState('');
 
-  // Long goal form
   const [lgVision, setLgVision] = useState('');
   const [lgTimeline, setLgTimeline] = useState('');
-  const [lgResources, setLgResources] = useState('');
-  const [lgNotes, setLgNotes] = useState('');
   const [lgMilestones, setLgMilestones] = useState<Milestone[]>([]);
   const [lgMsInput, setLgMsInput] = useState('');
 
-  // Dream form
   const [dTitle, setDTitle] = useState('');
   const [dCategory, setDCategory] = useState('Life');
   const [dNotes, setDNotes] = useState('');
@@ -49,7 +53,7 @@ export default function GoalsScreen() {
 
   const resetForms = () => {
     setSgTitle(''); setSgDue(''); setSgChecklist([]); setSgCheckInput('');
-    setLgVision(''); setLgTimeline(''); setLgResources(''); setLgNotes(''); setLgMilestones([]); setLgMsInput('');
+    setLgVision(''); setLgTimeline(''); setLgMilestones([]); setLgMsInput('');
     setDTitle(''); setDCategory('Life'); setDNotes(''); setDYear('');
   };
 
@@ -63,7 +67,7 @@ export default function GoalsScreen() {
   const handleAddLongGoal = async () => {
     if (!lgVision.trim()) { showAlert('Required', 'Enter your vision.'); return; }
     setSaving(true);
-    await addLongGoal({ vision: lgVision.trim(), milestones: lgMilestones, timeline: lgTimeline.trim() || undefined, resources: lgResources.trim() || undefined, notes: lgNotes.trim() || undefined, progress: 0, user_id: '' });
+    await addLongGoal({ vision: lgVision.trim(), milestones: lgMilestones, timeline: lgTimeline.trim() || undefined, progress: 0, user_id: '' });
     setSaving(false); setModal(null); resetForms();
   };
 
@@ -78,8 +82,7 @@ export default function GoalsScreen() {
     const updated = items.map(i => i.id === itemId ? { ...i, done: !i.done } : i);
     const doneCount = updated.filter(i => i.done).length;
     const progress = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
-    const completed = progress === 100;
-    await updateShortGoal(goalId, { checklist: updated, progress, completed });
+    await updateShortGoal(goalId, { checklist: updated, progress, completed: progress === 100 });
   };
 
   const toggleMilestone = async (goalId: string, milestones: Milestone[], msId: string) => {
@@ -88,59 +91,63 @@ export default function GoalsScreen() {
     await updateLongGoal(goalId, { milestones: updated, progress });
   };
 
+  const modalType = activeTab === 0 ? 'short' : activeTab === 1 ? 'long' : 'dream';
+
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
+
       <View style={styles.header}>
-        <Text style={styles.screenTitle}>Goals & Dreams</Text>
-        <Pressable style={styles.addBtn} onPress={() => { resetForms(); setModal(activeTab === 0 ? 'short' : activeTab === 1 ? 'long' : 'dream'); }}>
-          <MaterialIcons name="add" size={26} color="#fff" />
+        <Text style={[styles.title, { color: colors.text }]}>Goals & Dreams</Text>
+        <Pressable style={[styles.addBtn, { backgroundColor: colors.accent }]} onPress={() => { resetForms(); setModal(modalType); }}>
+          <Plus size={22} color="#fff" strokeWidth={2.5} />
         </Pressable>
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabRow}>
+      <View style={[styles.tabRow, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}>
         {TABS.map((t, i) => (
-          <Pressable key={t} style={[styles.tab, activeTab === i && styles.tabActive]} onPress={() => setActiveTab(i)}>
-            <Text style={[styles.tabText, activeTab === i && styles.tabTextActive]}>{t}</Text>
+          <Pressable key={t.label} style={[styles.tab, activeTab === i && { backgroundColor: colors.surface, borderColor: colors.accent }]} onPress={() => setActiveTab(i)}>
+            <t.icon size={14} color={activeTab === i ? colors.accent : colors.textMuted} strokeWidth={2} />
+            <Text style={[styles.tabText, { color: activeTab === i ? colors.accent : colors.textMuted }]}>{t.label}</Text>
           </Pressable>
         ))}
       </View>
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={Colors.accent} size="large" /></View>
+        <View style={styles.center}><ActivityIndicator color={colors.accent} size="large" /></View>
       ) : (
         <ScrollView contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
           {/* SHORT GOALS */}
           {activeTab === 0 && (
             shortGoals.length === 0 ? (
               <View style={styles.empty}>
-                <Text style={styles.emptyEmoji}>🎯</Text>
-                <Text style={styles.emptyTitle}>Set Short-Term Goals</Text>
-                <Text style={styles.emptySubtitle}>Break your goals into actionable checklists</Text>
+                <Target size={52} color={colors.textDim} strokeWidth={1.5} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Short-Term Goals</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>Break your goals into actionable checklists</Text>
               </View>
             ) : shortGoals.map(g => (
-              <GlassCard key={g.id} style={[styles.goalCard, g.completed && styles.doneCard]}>
+              <GlassCard key={g.id} style={[styles.goalCard, { backgroundColor: colors.surface, borderColor: g.completed ? Colors.success : colors.border }]}>
                 <View style={styles.goalHeader}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.goalTitle, g.completed && styles.strikethrough]}>{g.title}</Text>
-                    {g.due_date ? <Text style={styles.goalDue}>Due: {g.due_date}</Text> : null}
+                    <Text style={[styles.goalTitle, { color: colors.text }, g.completed && styles.strikethrough]} numberOfLines={2}>{g.title}</Text>
+                    {g.due_date && <Text style={[styles.goalMeta, { color: Colors.warning }]}>Due {g.due_date}</Text>}
                   </View>
                   <Pressable hitSlop={8} onPress={() => showAlert('Delete Goal', `Delete "${g.title}"?`, [
                     { text: 'Cancel', style: 'cancel' },
                     { text: 'Delete', style: 'destructive', onPress: () => deleteShortGoal(g.id) },
                   ])}>
-                    <MaterialIcons name="delete-outline" size={18} color={Colors.textDim} />
+                    <Trash2 size={16} color={colors.textDim} strokeWidth={2} />
                   </Pressable>
                 </View>
                 <View style={styles.progressRow}>
-                  <ProgressBar progress={g.progress} color={g.completed ? Colors.success : Colors.accent} height={6} />
-                  <Text style={styles.progressLabel}>{g.progress}%</Text>
+                  <ProgressBar progress={g.progress} color={g.completed ? Colors.success : colors.accent} height={5} backgroundColor={colors.surfaceLight} />
+                  <Text style={[styles.progressLabel, { color: colors.textMuted }]}>{g.progress}%</Text>
                 </View>
                 {(g.checklist ?? []).map(item => (
                   <Pressable key={item.id} style={styles.checkRow} onPress={() => toggleChecklistItem(g.id, g.checklist, item.id)}>
-                    <MaterialIcons name={item.done ? 'check-box' : 'check-box-outline-blank'} size={20} color={item.done ? Colors.success : Colors.textMuted} />
-                    <Text style={[styles.checkText, item.done && styles.checkDone]}>{item.text}</Text>
+                    {item.done ? <CheckSquare size={18} color={Colors.success} strokeWidth={2} /> : <Square size={18} color={colors.textMuted} strokeWidth={2} />}
+                    <Text style={[styles.checkText, { color: item.done ? colors.textMuted : colors.textSecondary }, item.done && styles.strikethrough]}>{item.text}</Text>
                   </Pressable>
                 ))}
               </GlassCard>
@@ -151,38 +158,32 @@ export default function GoalsScreen() {
           {activeTab === 1 && (
             longGoals.length === 0 ? (
               <View style={styles.empty}>
-                <Text style={styles.emptyEmoji}>🌄</Text>
-                <Text style={styles.emptyTitle}>Define Long-Term Goals</Text>
-                <Text style={styles.emptySubtitle}>Set your vision with milestones and timeline</Text>
+                <Telescope size={52} color={colors.textDim} strokeWidth={1.5} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>Define Long-Term Goals</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>Set your vision with milestones and timeline</Text>
               </View>
             ) : longGoals.map(g => (
-              <GlassCard key={g.id} style={styles.goalCard}>
+              <GlassCard key={g.id} style={[styles.goalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.goalHeader}>
-                  <Text style={styles.goalTitle} numberOfLines={2}>{g.vision}</Text>
-                  <Pressable hitSlop={8} onPress={() => showAlert('Delete Goal', 'Delete this long-term goal?', [
+                  <Text style={[styles.goalTitle, { color: colors.text, flex: 1 }]} numberOfLines={3}>{g.vision}</Text>
+                  <Pressable hitSlop={8} onPress={() => showAlert('Delete', 'Delete this long-term goal?', [
                     { text: 'Cancel', style: 'cancel' },
                     { text: 'Delete', style: 'destructive', onPress: () => deleteLongGoal(g.id) },
                   ])}>
-                    <MaterialIcons name="delete-outline" size={18} color={Colors.textDim} />
+                    <Trash2 size={16} color={colors.textDim} strokeWidth={2} />
                   </Pressable>
                 </View>
-                {g.timeline ? <Text style={styles.goalMeta}>⏱ {g.timeline}</Text> : null}
+                {g.timeline && <Text style={[styles.goalMeta, { color: colors.textMuted }]}>{g.timeline}</Text>}
                 <View style={styles.progressRow}>
-                  <ProgressBar progress={g.progress} color={Colors.primaryLight} height={6} />
-                  <Text style={styles.progressLabel}>{g.progress}%</Text>
+                  <ProgressBar progress={g.progress} color={colors.primaryLight} height={5} backgroundColor={colors.surfaceLight} />
+                  <Text style={[styles.progressLabel, { color: colors.textMuted }]}>{g.progress}%</Text>
                 </View>
-                {(g.milestones ?? []).length > 0 ? (
-                  <View style={styles.milestonesSection}>
-                    <Text style={styles.milestonesLabel}>Milestones</Text>
-                    {g.milestones.map(m => (
-                      <Pressable key={m.id} style={styles.checkRow} onPress={() => toggleMilestone(g.id, g.milestones, m.id)}>
-                        <MaterialIcons name={m.done ? 'check-circle' : 'radio-button-unchecked'} size={18} color={m.done ? Colors.success : Colors.textMuted} />
-                        <Text style={[styles.checkText, m.done && styles.checkDone]}>{m.text}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : null}
-                {g.notes ? <Text style={styles.goalNotes}>{g.notes}</Text> : null}
+                {(g.milestones ?? []).map(m => (
+                  <Pressable key={m.id} style={styles.checkRow} onPress={() => toggleMilestone(g.id, g.milestones, m.id)}>
+                    {m.done ? <CheckCircle2 size={18} color={Colors.success} strokeWidth={2} /> : <Circle size={18} color={colors.textMuted} strokeWidth={2} />}
+                    <Text style={[styles.checkText, { color: m.done ? colors.textMuted : colors.textSecondary }, m.done && styles.strikethrough]}>{m.text}</Text>
+                  </Pressable>
+                ))}
               </GlassCard>
             ))
           )}
@@ -191,29 +192,25 @@ export default function GoalsScreen() {
           {activeTab === 2 && (
             dreams.length === 0 ? (
               <View style={styles.empty}>
-                <Text style={styles.emptyEmoji}>✨</Text>
-                <Text style={styles.emptyTitle}>Capture Your Dreams</Text>
-                <Text style={styles.emptySubtitle}>Store your life, career and travel dreams here</Text>
+                <Star size={52} color={colors.textDim} strokeWidth={1.5} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>Capture Your Dreams</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>Store your life, career, and travel dreams</Text>
               </View>
-            ) : (
-              <View style={styles.dreamGrid}>
-                {dreams.map(d => (
-                  <GlassCard key={d.id} style={styles.dreamCard} glow>
-                    <View style={styles.dreamHeader}>
-                      <View style={styles.dreamCategoryBadge}>
-                        <Text style={styles.dreamCategory}>{d.category}</Text>
-                      </View>
-                      <Pressable hitSlop={8} onPress={() => deleteDream(d.id)}>
-                        <MaterialIcons name="close" size={16} color={Colors.textDim} />
-                      </Pressable>
-                    </View>
-                    <Text style={styles.dreamTitle}>{d.title}</Text>
-                    {d.notes ? <Text style={styles.dreamNotes} numberOfLines={2}>{d.notes}</Text> : null}
-                    {d.target_year ? <Text style={styles.dreamYear}>🎯 {d.target_year}</Text> : null}
-                  </GlassCard>
-                ))}
-              </View>
-            )
+            ) : dreams.map(d => (
+              <GlassCard key={d.id} style={[styles.dreamCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={styles.dreamHeader}>
+                  <View style={[styles.categoryBadge, { backgroundColor: colors.accent + '18', borderColor: colors.accent + '40' }]}>
+                    <Text style={[styles.categoryText, { color: colors.accent }]}>{d.category}</Text>
+                  </View>
+                  <Pressable hitSlop={8} onPress={() => deleteDream(d.id)}>
+                    <X size={16} color={colors.textDim} strokeWidth={2} />
+                  </Pressable>
+                </View>
+                <Text style={[styles.dreamTitle, { color: colors.text }]}>{d.title}</Text>
+                {d.notes && <Text style={[styles.dreamNotes, { color: colors.textMuted }]} numberOfLines={2}>{d.notes}</Text>}
+                {d.target_year && <Text style={[styles.dreamYear, { color: colors.accent }]}>{d.target_year}</Text>}
+              </GlassCard>
+            ))
           )}
         </ScrollView>
       )}
@@ -222,30 +219,32 @@ export default function GoalsScreen() {
       <Modal visible={modal === 'short'} transparent animationType="slide" onRequestClose={() => setModal(null)}>
         <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setModal(null)} />
-          <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={styles.handle} />
-            <Text style={styles.sheetTitle}>New Short-Term Goal</Text>
+          <View style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: insets.bottom + 16 }]}>
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetTitle, { color: colors.text }]}>New Short-Term Goal</Text>
+              <Pressable onPress={() => setModal(null)}><X size={20} color={colors.textMuted} strokeWidth={2} /></Pressable>
+            </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <AppInput label="Goal Title *" placeholder="What do you want to achieve?" value={sgTitle} onChangeText={setSgTitle} />
               <AppInput label="Due Date (YYYY-MM-DD)" placeholder="2025-12-31" value={sgDue} onChangeText={setSgDue} />
-              <Text style={styles.fieldLabel}>Checklist Items</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Checklist Items</Text>
               <View style={styles.checklistInput}>
-                <AppInput placeholder="Add checklist item..." value={sgCheckInput} onChangeText={setSgCheckInput} style={{ flex: 1 }} />
-                <Pressable style={styles.addCheckBtn} onPress={() => {
-                  if (sgCheckInput.trim()) {
-                    setSgChecklist(prev => [...prev, { id: genId(), text: sgCheckInput.trim(), done: false }]);
-                    setSgCheckInput('');
-                  }
+                <View style={{ flex: 1 }}>
+                  <AppInput placeholder="Add checklist item..." value={sgCheckInput} onChangeText={setSgCheckInput} />
+                </View>
+                <Pressable style={[styles.addCheckBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]} onPress={() => {
+                  if (sgCheckInput.trim()) { setSgChecklist(prev => [...prev, { id: genId(), text: sgCheckInput.trim(), done: false }]); setSgCheckInput(''); }
                 }}>
-                  <MaterialIcons name="add" size={20} color={Colors.accent} />
+                  <Plus size={18} color={colors.accent} strokeWidth={2.5} />
                 </Pressable>
               </View>
-              {sgChecklist.map((item, idx) => (
-                <View key={item.id} style={styles.checkPreviewRow}>
-                  <MaterialIcons name="check-box-outline-blank" size={16} color={Colors.textMuted} />
-                  <Text style={styles.checkPreviewText}>{item.text}</Text>
+              {sgChecklist.map(item => (
+                <View key={item.id} style={styles.previewRow}>
+                  <Square size={14} color={colors.textMuted} strokeWidth={2} />
+                  <Text style={[styles.previewText, { color: colors.textSecondary }]}>{item.text}</Text>
                   <Pressable hitSlop={8} onPress={() => setSgChecklist(prev => prev.filter(i => i.id !== item.id))}>
-                    <MaterialIcons name="close" size={14} color={Colors.textDim} />
+                    <X size={14} color={colors.textDim} strokeWidth={2} />
                   </Pressable>
                 </View>
               ))}
@@ -259,32 +258,32 @@ export default function GoalsScreen() {
       <Modal visible={modal === 'long'} transparent animationType="slide" onRequestClose={() => setModal(null)}>
         <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setModal(null)} />
-          <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={styles.handle} />
-            <Text style={styles.sheetTitle}>New Long-Term Goal</Text>
+          <View style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: insets.bottom + 16 }]}>
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetTitle, { color: colors.text }]}>New Long-Term Goal</Text>
+              <Pressable onPress={() => setModal(null)}><X size={20} color={colors.textMuted} strokeWidth={2} /></Pressable>
+            </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <AppInput label="Vision *" placeholder="Describe your big goal..." value={lgVision} onChangeText={setLgVision} multiline numberOfLines={3} />
               <AppInput label="Timeline" placeholder="e.g. 2 years, By 2027" value={lgTimeline} onChangeText={setLgTimeline} />
-              <AppInput label="Resources Needed" placeholder="Skills, tools, mentors..." value={lgResources} onChangeText={setLgResources} />
-              <AppInput label="Notes" placeholder="Additional thoughts..." value={lgNotes} onChangeText={setLgNotes} multiline numberOfLines={2} />
-              <Text style={styles.fieldLabel}>Milestones</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Milestones</Text>
               <View style={styles.checklistInput}>
-                <AppInput placeholder="Add milestone..." value={lgMsInput} onChangeText={setLgMsInput} style={{ flex: 1 }} />
-                <Pressable style={styles.addCheckBtn} onPress={() => {
-                  if (lgMsInput.trim()) {
-                    setLgMilestones(prev => [...prev, { id: genId(), text: lgMsInput.trim(), done: false }]);
-                    setLgMsInput('');
-                  }
+                <View style={{ flex: 1 }}>
+                  <AppInput placeholder="Add milestone..." value={lgMsInput} onChangeText={setLgMsInput} />
+                </View>
+                <Pressable style={[styles.addCheckBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]} onPress={() => {
+                  if (lgMsInput.trim()) { setLgMilestones(prev => [...prev, { id: genId(), text: lgMsInput.trim(), done: false }]); setLgMsInput(''); }
                 }}>
-                  <MaterialIcons name="add" size={20} color={Colors.accent} />
+                  <Plus size={18} color={colors.accent} strokeWidth={2.5} />
                 </Pressable>
               </View>
               {lgMilestones.map(m => (
-                <View key={m.id} style={styles.checkPreviewRow}>
-                  <MaterialIcons name="radio-button-unchecked" size={16} color={Colors.textMuted} />
-                  <Text style={styles.checkPreviewText}>{m.text}</Text>
+                <View key={m.id} style={styles.previewRow}>
+                  <Circle size={14} color={colors.textMuted} strokeWidth={2} />
+                  <Text style={[styles.previewText, { color: colors.textSecondary }]}>{m.text}</Text>
                   <Pressable hitSlop={8} onPress={() => setLgMilestones(prev => prev.filter(i => i.id !== m.id))}>
-                    <MaterialIcons name="close" size={14} color={Colors.textDim} />
+                    <X size={14} color={colors.textDim} strokeWidth={2} />
                   </Pressable>
                 </View>
               ))}
@@ -298,23 +297,26 @@ export default function GoalsScreen() {
       <Modal visible={modal === 'dream'} transparent animationType="slide" onRequestClose={() => setModal(null)}>
         <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setModal(null)} />
-          <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={styles.handle} />
-            <Text style={styles.sheetTitle}>Add a Dream ✨</Text>
+          <View style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: insets.bottom + 16 }]}>
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetTitle, { color: colors.text }]}>Add a Dream</Text>
+              <Pressable onPress={() => setModal(null)}><X size={20} color={colors.textMuted} strokeWidth={2} /></Pressable>
+            </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <AppInput label="Dream *" placeholder="Describe your dream..." value={dTitle} onChangeText={setDTitle} />
-              <Text style={styles.fieldLabel}>Category</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Category</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.base }}>
-                <View style={styles.catRow}>
+                <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
                   {DREAM_CATEGORIES.map(c => (
-                    <Pressable key={c} style={[styles.catChip, dCategory === c && styles.catChipActive]} onPress={() => setDCategory(c)}>
-                      <Text style={[styles.catChipText, dCategory === c && styles.catChipActiveText]}>{c}</Text>
+                    <Pressable key={c} style={[styles.selectChip, { borderColor: colors.border, backgroundColor: colors.surfaceLight }, dCategory === c && { borderColor: colors.accent, backgroundColor: colors.accent + '18' }]} onPress={() => setDCategory(c)}>
+                      <Text style={[styles.selectChipText, { color: dCategory === c ? colors.accent : colors.textMuted }]}>{c}</Text>
                     </Pressable>
                   ))}
                 </View>
               </ScrollView>
               <AppInput label="Notes" placeholder="Why is this your dream?" value={dNotes} onChangeText={setDNotes} multiline numberOfLines={3} />
-              <AppInput label="Target Year" placeholder="e.g. 2028" value={dYear} onChangeText={setDYear} keyboardType="numeric" />
+              <AppInput label="Target Year" placeholder="2028" value={dYear} onChangeText={setDYear} keyboardType="numeric" />
               <PrimaryButton title="Add Dream" onPress={handleAddDream} loading={saving} />
             </ScrollView>
           </View>
@@ -325,56 +327,44 @@ export default function GoalsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingVertical: Spacing.md },
-  screenTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xxl, fontWeight: '700' },
-  addBtn: { width: 46, height: 46, borderRadius: 23, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 },
-  tabRow: { flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.sm },
-  tab: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', backgroundColor: Colors.surfaceLight },
-  tabActive: { borderColor: Colors.accent, backgroundColor: 'rgba(41,182,246,0.12)' },
-  tabText: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
-  tabTextActive: { color: Colors.accent },
+  root: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  title: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold },
+  addBtn: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
+  tabRow: { flexDirection: 'row', marginHorizontal: Spacing.base, marginBottom: Spacing.base, borderRadius: Radius.lg, borderWidth: 1, padding: 4, gap: 4 },
+  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: 'transparent' },
+  tabText: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xxl, paddingTop: Spacing.xxxl },
-  emptyEmoji: { fontSize: 64, marginBottom: Spacing.base },
-  emptyTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xl, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.sm },
-  emptySubtitle: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.base, textAlign: 'center' },
+  empty: { alignItems: 'center', justifyContent: 'center', paddingTop: Spacing.xxxl, gap: Spacing.md },
+  emptyTitle: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold, textAlign: 'center' },
+  emptySubtitle: { fontSize: Typography.sizes.base, textAlign: 'center' },
   list: { paddingHorizontal: Spacing.base, paddingTop: Spacing.sm },
   goalCard: { marginBottom: Spacing.md, gap: Spacing.sm },
-  doneCard: { opacity: 0.7, borderColor: Colors.success },
   goalHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
-  goalTitle: { flex: 1, color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.lg, fontWeight: '700' },
-  strikethrough: { textDecorationLine: 'line-through', color: Colors.textMuted },
-  goalDue: { color: Colors.warning, fontFamily: 'Arial', fontSize: Typography.sizes.sm, marginTop: 2 },
-  goalMeta: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  goalNotes: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontStyle: 'italic' },
+  goalTitle: { fontSize: Typography.sizes.base, fontWeight: Typography.weights.semibold },
+  strikethrough: { textDecorationLine: 'line-through' },
+  goalMeta: { fontSize: Typography.sizes.xs, marginTop: 2 },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  progressLabel: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.xs, width: 32, textAlign: 'right' },
-  checkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs },
-  checkText: { flex: 1, color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.base },
-  checkDone: { textDecorationLine: 'line-through', color: Colors.textMuted },
-  milestonesSection: { gap: Spacing.xs, marginTop: Spacing.xs },
-  milestonesLabel: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
-  dreamGrid: { gap: Spacing.md },
-  dreamCard: { gap: Spacing.sm },
+  progressLabel: { fontSize: Typography.sizes.xs, width: 32, textAlign: 'right' },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: 5 },
+  checkText: { flex: 1, fontSize: Typography.sizes.sm },
+  dreamCard: { marginBottom: Spacing.md, gap: Spacing.sm },
   dreamHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dreamCategoryBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: Radius.full, backgroundColor: 'rgba(41,182,246,0.12)', borderWidth: 1, borderColor: Colors.border },
-  dreamCategory: { color: Colors.accent, fontFamily: 'Arial', fontSize: Typography.sizes.xs, fontWeight: '600' },
-  dreamTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.lg, fontWeight: '700' },
-  dreamNotes: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  dreamYear: { color: Colors.primaryLight, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
+  categoryBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: Radius.full, borderWidth: 1 },
+  categoryText: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.semibold },
+  dreamTitle: { fontSize: Typography.sizes.base, fontWeight: Typography.weights.semibold },
+  dreamNotes: { fontSize: Typography.sizes.sm },
+  dreamYear: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.65)' },
-  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: Radius.xxl, borderTopRightRadius: Radius.xxl, borderWidth: 1, borderColor: Colors.border, padding: Spacing.xl, maxHeight: '90%' },
-  handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.lg },
-  sheetTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xl, fontWeight: '700', marginBottom: Spacing.lg },
-  fieldLabel: { color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600', marginBottom: Spacing.sm },
+  sheet: { borderTopLeftRadius: Radius.xxl, borderTopRightRadius: Radius.xxl, borderWidth: 1, padding: Spacing.xl, maxHeight: '90%' },
+  handle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.base },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg },
+  sheetTitle: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold },
+  fieldLabel: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold, marginBottom: Spacing.sm },
   checklistInput: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
-  addCheckBtn: { width: 48, height: 48, borderRadius: Radius.md, backgroundColor: Colors.surfaceLighter, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center', marginTop: 0 },
-  checkPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs },
-  checkPreviewText: { flex: 1, color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  catRow: { flexDirection: 'row', gap: Spacing.sm },
-  catChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceLight },
-  catChipActive: { borderColor: Colors.accent, backgroundColor: 'rgba(41,182,246,0.12)' },
-  catChipText: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  catChipActiveText: { color: Colors.accent, fontWeight: '600' },
+  addCheckBtn: { width: 48, height: 48, borderRadius: Radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: 5 },
+  previewText: { flex: 1, fontSize: Typography.sizes.sm },
+  selectChip: { paddingHorizontal: Spacing.md, paddingVertical: 7, borderRadius: Radius.full, borderWidth: 1 },
+  selectChipText: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
 });

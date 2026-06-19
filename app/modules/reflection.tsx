@@ -28,7 +28,7 @@ export default function ReflectionScreen() {
   const markedDates = reflections.reduce((acc, r) => {
     acc[r.date] = { marked: true, dotColor: colors.accent };
     return acc;
-  }, {} as Record<string, { marked: boolean; dotColor: string }>);
+  }, {} as Record<string, any>);
 
   const handleSave = async () => {
     if (!content.trim()) return;
@@ -39,37 +39,64 @@ export default function ReflectionScreen() {
 
   const selectedReflection = reflections.find(r => r.date === selectedDate);
 
+  const TABS = [
+    { key: 'write', label: 'Today' },
+    { key: 'history', label: 'History' },
+    { key: 'calendar', label: 'Calendar' },
+  ] as const;
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
-      <ScreenHeader title="Daily Reflection" subtitle="Journal your growth" showBack />
+      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
+      <ScreenHeader title="Reflection" subtitle="Journal your growth" showBack />
 
-      <View style={[styles.tabRow, { backgroundColor: colors.surfaceLight }]}>
-        {(['write', 'history', 'calendar'] as const).map(v => (
-          <Pressable key={v} style={[styles.tab, view === v && { backgroundColor: colors.primary }]} onPress={() => setView(v)}>
-            <Text style={[styles.tabText, { color: view === v ? '#fff' : colors.textMuted }]}>
-              {v === 'write' ? 'Today' : v === 'history' ? 'History' : 'Calendar'}
-            </Text>
+      <View style={[styles.tabRow, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}>
+        {TABS.map(t => (
+          <Pressable
+            key={t.key}
+            style={[styles.tab, view === t.key && { backgroundColor: colors.accent }]}
+            onPress={() => setView(t.key)}
+          >
+            <Text style={[styles.tabText, { color: view === t.key ? '#fff' : colors.textMuted }]}>{t.label}</Text>
           </Pressable>
         ))}
       </View>
 
-      {loading ? <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} /> : view === 'write' ? (
+      {loading ? (
+        <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+      ) : view === 'write' ? (
         <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: insets.bottom + 40 }}>
-          <GlassCard style={{ backgroundColor: colors.glass, borderColor: colors.border, gap: Spacing.md }}>
-            <Text style={[styles.promptLabel, { color: colors.accent }]}>Today's Prompt</Text>
-            <Text style={[styles.prompt, { color: colors.text }]}>{prompt}</Text>
-            <AppInput label="Your Reflection" value={content} onChangeText={setContent} placeholder="Write your thoughts..." multiline style={{ minHeight: 120 }} />
-            <PrimaryButton title={todayReflection ? 'Update Reflection' : 'Save Reflection'} onPress={handleSave} loading={saving} />
+          <GlassCard style={{ backgroundColor: colors.surface, borderColor: colors.border, gap: Spacing.md }}>
+            <View style={[styles.promptBox, { backgroundColor: colors.accent + '10', borderColor: colors.accent + '30' }]}>
+              <Text style={[styles.promptLabel, { color: colors.accent }]}>Today's Prompt</Text>
+              <Text style={[styles.prompt, { color: colors.text }]}>{prompt}</Text>
+            </View>
+            <AppInput
+              label="Your Reflection"
+              value={content}
+              onChangeText={setContent}
+              placeholder="Write your thoughts for today..."
+              multiline
+              style={{ minHeight: 140 }}
+            />
+            <PrimaryButton
+              title={todayReflection ? 'Update Reflection' : 'Save Reflection'}
+              onPress={handleSave}
+              loading={saving}
+            />
           </GlassCard>
         </ScrollView>
       ) : view === 'history' ? (
         <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: insets.bottom + 40, gap: Spacing.md }}>
           {reflections.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>No reflections yet. Start journaling today!</Text>
+            <View style={styles.empty}>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No reflections yet. Start journaling today!</Text>
+            </View>
           ) : reflections.map(r => (
-            <GlassCard key={r.id} style={{ backgroundColor: colors.glass, borderColor: colors.border, gap: Spacing.sm }}>
-              <Text style={[styles.historyDate, { color: colors.accent }]}>{new Date(r.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+            <GlassCard key={r.id} style={{ backgroundColor: colors.surface, borderColor: colors.border, gap: Spacing.sm }}>
+              <Text style={[styles.historyDate, { color: colors.accent }]}>
+                {new Date(r.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </Text>
               <Text style={[styles.historyPrompt, { color: colors.textMuted }]}>{r.prompt}</Text>
               <Text style={[styles.historyContent, { color: colors.text }]}>{r.content}</Text>
             </GlassCard>
@@ -78,7 +105,10 @@ export default function ReflectionScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: insets.bottom + 40 }}>
           <Calendar
-            markedDates={{ ...markedDates, [selectedDate]: { ...(markedDates[selectedDate] ?? {}), selected: true, selectedColor: colors.primary } }}
+            markedDates={{
+              ...markedDates,
+              [selectedDate]: { ...(markedDates[selectedDate] ?? {}), selected: true, selectedColor: colors.accent },
+            }}
             onDayPress={d => setSelectedDate(d.dateString)}
             theme={{
               backgroundColor: 'transparent',
@@ -86,19 +116,22 @@ export default function ReflectionScreen() {
               textSectionTitleColor: colors.textMuted,
               dayTextColor: colors.text,
               todayTextColor: colors.accent,
-              selectedDayBackgroundColor: colors.primary,
+              selectedDayBackgroundColor: colors.accent,
               monthTextColor: colors.text,
               arrowColor: colors.accent,
+              dotColor: colors.accent,
             }}
           />
           {selectedReflection ? (
-            <GlassCard style={{ backgroundColor: colors.glass, borderColor: colors.border, marginTop: Spacing.md, gap: Spacing.sm }}>
+            <GlassCard style={{ backgroundColor: colors.surface, borderColor: colors.border, marginTop: Spacing.md, gap: Spacing.sm }}>
               <Text style={[styles.historyDate, { color: colors.accent }]}>{selectedDate}</Text>
               <Text style={[styles.historyPrompt, { color: colors.textMuted }]}>{selectedReflection.prompt}</Text>
               <Text style={[styles.historyContent, { color: colors.text }]}>{selectedReflection.content}</Text>
             </GlassCard>
           ) : (
-            <Text style={[styles.emptyText, { color: colors.textMuted, marginTop: Spacing.lg }]}>No reflection on this date</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted, marginTop: Spacing.lg, textAlign: 'center' }]}>
+              No reflection on this date
+            </Text>
           )}
         </ScrollView>
       )}
@@ -108,13 +141,38 @@ export default function ReflectionScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  tabRow: { flexDirection: 'row', marginHorizontal: Spacing.base, borderRadius: Radius.md, padding: 4, marginBottom: Spacing.md },
-  tab: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.sm },
-  tabText: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, fontWeight: '600' },
-  promptLabel: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  prompt: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.lg, fontWeight: '600', lineHeight: 26 },
-  emptyText: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.base, textAlign: 'center', padding: Spacing.xxl },
-  historyDate: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, fontWeight: '700' },
-  historyPrompt: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.sm, fontStyle: 'italic' },
-  historyContent: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.base, lineHeight: 22 },
+  tabRow: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.base,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    padding: 4,
+    marginBottom: Spacing.base,
+    gap: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+    borderRadius: Radius.md,
+  },
+  tabText: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
+  promptBox: {
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    gap: Spacing.xs,
+  },
+  promptLabel: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  prompt: { fontSize: Typography.sizes.base, fontWeight: Typography.weights.semibold, lineHeight: 24 },
+  empty: { alignItems: 'center', paddingTop: Spacing.xxxl },
+  emptyText: { fontSize: Typography.sizes.base },
+  historyDate: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.bold },
+  historyPrompt: { fontSize: Typography.sizes.sm, fontStyle: 'italic' },
+  historyContent: { fontSize: Typography.sizes.base, lineHeight: 22 },
 });

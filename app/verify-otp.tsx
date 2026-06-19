@@ -46,7 +46,6 @@ export default function VerifyOTPScreen() {
       <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}>
         <Pressable onPress={() => router.back()}><Text style={[styles.backText, { color: colors.accent }]}>← Back</Text></Pressable>
-        <Text style={styles.emoji}>✉️</Text>
         <Text style={[styles.title, { color: colors.text }]}>Verify OTP</Text>
         <Text style={[styles.sub, { color: colors.textMuted }]}>Enter the 6-digit code sent to your email.</Text>
         <View style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.border }]}>
@@ -67,11 +66,11 @@ export default function VerifyOTPScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: Spacing.base },
-  backText: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.base, fontWeight: '600', marginBottom: Spacing.xl },
-  emoji: { fontSize: 48, textAlign: 'center', marginBottom: Spacing.md },
-  title: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.xxxl, fontWeight: '700', textAlign: 'center' },
-  sub: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.base, textAlign: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xxl },
+  backText: { fontSize: Typography.sizes.base, fontWeight: '600', marginBottom: Spacing.xl },
+  emoji: { fontSize: 0, height: 0 },
+  title: { fontSize: Typography.sizes.xxxl, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.sm },
+  sub: { fontSize: Typography.sizes.base, textAlign: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xxl },
   card: { borderRadius: Radius.xl, borderWidth: 1, padding: Spacing.xl },
   resendRow: { alignItems: 'center', marginTop: Spacing.lg },
-  resendText: { fontFamily: Typography.fontFamily, fontSize: Typography.sizes.base, fontWeight: '600' },
+  resendText: { fontSize: Typography.sizes.base, fontWeight: '600' },
 });

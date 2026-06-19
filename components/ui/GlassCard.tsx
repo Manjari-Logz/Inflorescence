@@ -4,14 +4,14 @@ import { Colors, Radius, Shadows } from '@/constants/theme';
 
 interface GlassCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
   glow?: boolean;
   padding?: number;
 }
 
 export function GlassCard({ children, style, glow = false, padding = 16 }: GlassCardProps) {
   return (
-    <View style={[styles.card, glow && styles.glow, { padding }, style]}>
+    <View style={[styles.card, glow && styles.glow, { padding }, ...(Array.isArray(style) ? style : [style])]}>
       {children}
     </View>
   );
@@ -19,7 +19,7 @@ export function GlassCard({ children, style, glow = false, padding = 16 }: Glass
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.glass,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -27,6 +27,5 @@ const styles = StyleSheet.create({
   },
   glow: {
     borderColor: Colors.borderStrong,
-    ...Shadows.glow,
   },
 });

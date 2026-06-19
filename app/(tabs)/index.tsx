@@ -1,54 +1,54 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  StatusBar,
+  View, Text, ScrollView, StyleSheet, Pressable, Modal, StatusBar,
 } from 'react-native';
-import { SidebarDrawer } from '@/components/ui/SidebarDrawer';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import {
+  Bell, Search, CheckCircle2, Clock, Flame, Star,
+  BookOpen, Activity, Trophy, Target, ChevronRight,
+  Timer, TrendingUp, Calendar, Sun, Sunset, Moon,
+  X,
+} from 'lucide-react-native';
 import { useAuth, useAlert } from '@/template';
 import { useTasks } from '@/hooks/useTasks';
 import { useBadges } from '@/hooks/useBadges';
-import { useMood } from '@/hooks/useMood';
 import { useEvents } from '@/hooks/useEvents';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius, MODULE_ROUTES, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { BadgePill } from '@/components/ui/BadgePill';
-import { MoodPicker } from '@/components/feature/MoodPicker';
 import { PomodoroTimer } from '@/components/feature/PomodoroTimer';
 import { BadgeAchievement } from '@/components/feature/BadgeAchievement';
-import { MOOD_OPTIONS, MOTIVATIONAL_QUOTES, moodService } from '@/services/moodService';
-import { BADGE_EMOJIS } from '@/services/badgesService';
 
-const QUOTE = moodService.getRandomQuote();
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return { text: 'Good Morning', icon: Sun };
+  if (h < 17) return { text: 'Good Afternoon', icon: Sunset };
+  return { text: 'Good Evening', icon: Moon };
+}
 
-export default function DashboardScreen() {
+export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const { user } = useAuth();
   const { tasks } = useTasks();
   const { badges } = useBadges();
-  const { todayMood, setMood } = useMood();
   const { hackathons } = useEvents();
   const { showAlert } = useAlert();
-  const [moodModal, setMoodModal] = useState(false);
   const [pomodoroModal, setPomodoroModal] = useState(false);
   const [badgePreview, setBadgePreview] = useState<{ type: string; name: string } | null>(null);
-  const [drawerVisible, setDrawerVisible] = useState(false);
 
   const today = new Date();
-  const greeting = today.getHours() < 12 ? 'Good Morning' : today.getHours() < 17 ? 'Good Afternoon' : 'Good Evening';
+  const { text: greetingText, icon: GreetingIcon } = getGreeting();
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const displayName = user?.username ?? user?.email?.split('@')[0] ?? 'there';
 
   const todayTasks = tasks.filter(t => {
     if (t.completed) return false;
     if (!t.deadline) return false;
-    const d = new Date(t.deadline);
-    return d.toDateString() === today.toDateString();
+    return new Date(t.deadline).toDateString() === today.toDateString();
   });
 
   const completedToday = tasks.filter(t => {
@@ -65,212 +65,218 @@ export default function DashboardScreen() {
     .sort((a, b) => new Date(a.end_date!).getTime() - new Date(b.end_date!).getTime())
     .slice(0, 3);
 
-  const recentBadges = badges.slice(0, 4);
-  const moodOption = MOOD_OPTIONS.find(m => m.label === todayMood?.mood);
-  const isSad = todayMood && (todayMood.mood === 'Sad' || todayMood.mood === 'Very Sad');
+  const priorityColor = (p: string) => Colors.priority[p] ?? colors.accent;
 
-  const handleMoodSelect = async (mood: string, score: number) => {
-    await setMood(mood, score);
-    setMoodModal(false);
-    if (score >= 4) {
-      setBadgePreview({ type: 'heart', name: 'Heart Badge' });
-    } else if (score <= 2) {
-      showAlert(`${QUOTE.quote}`, `— ${QUOTE.author}`);
-    }
-  };
+  const quickStats = [
+    { label: "Today's Tasks", value: todayTasks.length, icon: CheckCircle2, color: colors.accent },
+    { label: 'Done Today', value: completedToday.length, icon: Star, color: Colors.success },
+    { label: 'Total Badges', value: badges.length, icon: Trophy, color: Colors.warning },
+    { label: 'Completion', value: `${completionRate}%`, icon: TrendingUp, color: '#8B5CF6' },
+  ];
+
+  const moduleShortcuts = [
+    { label: 'Study', icon: BookOpen, route: '/(tabs)/study', color: colors.accent },
+    { label: 'Events', icon: Calendar, route: '/(tabs)/events', color: Colors.warning },
+    { label: 'Books', icon: BookOpen, route: '/modules/books', color: '#8B5CF6' },
+    { label: 'Exercise', icon: Activity, route: '/modules/exercise', color: Colors.success },
+    { label: 'Goals', icon: Target, route: '/(tabs)/goals', color: '#A855F7' },
+    { label: 'Analytics', icon: TrendingUp, route: '/modules/analytics', color: colors.accent },
+  ];
 
   return (
     <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 80 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-            <Pressable onPress={() => setDrawerVisible(true)} hitSlop={12} style={styles.menuBtn}>
-              <MaterialIcons name="menu" size={26} color={colors.text} />
-            </Pressable>
-            <View>
-              <Text style={styles.greeting}>{greeting} 👋</Text>
-              <Text style={styles.name}>{user?.username ?? user?.email?.split('@')[0] ?? 'Champion'}</Text>
-              <Text style={styles.date}>{dateStr}</Text>
+          <View style={styles.headerLeft}>
+            <View style={styles.greetingRow}>
+              <GreetingIcon size={16} color={colors.textMuted} strokeWidth={2} />
+              <Text style={[styles.greeting, { color: colors.textMuted }]}>{greetingText}</Text>
             </View>
+            <Text style={[styles.name, { color: colors.text }]}>
+              {displayName.charAt(0).toUpperCase() + displayName.slice(1)}
+            </Text>
+            <Text style={[styles.date, { color: colors.textMuted }]}>{dateStr}</Text>
           </View>
-          <Pressable style={styles.avatarBtn} onPress={() => setMoodModal(true)}>
-            <Text style={styles.avatarEmoji}>{moodOption ? moodOption.emoji : '😐'}</Text>
-          </Pressable>
-        </View>
-
-        {/* Mood Banner */}
-        {!todayMood ? (
-          <Pressable onPress={() => setMoodModal(true)} style={styles.moodBanner}>
-            <Text style={styles.moodBannerEmoji}>🌟</Text>
-            <View style={styles.moodBannerText}>
-              <Text style={styles.moodBannerTitle}>How are you feeling today?</Text>
-              <Text style={styles.moodBannerSub}>Tap to log your mood</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={Colors.accent} />
-          </Pressable>
-        ) : isSad ? (
-          <GlassCard style={styles.quoteCard}>
-            <Text style={styles.quoteIcon}>💙</Text>
-            <Text style={styles.quoteText}>"{QUOTE.quote}"</Text>
-            <Text style={styles.quoteAuthor}>— {QUOTE.author}</Text>
-          </GlassCard>
-        ) : null}
-
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <GlassCard style={styles.statCard}>
-            <Text style={styles.statNumber}>{completedToday.length}</Text>
-            <Text style={styles.statLabel}>Done Today</Text>
-          </GlassCard>
-          <GlassCard style={styles.statCard}>
-            <Text style={styles.statNumber}>{todayTasks.length}</Text>
-            <Text style={styles.statLabel}>Due Today</Text>
-          </GlassCard>
-          <GlassCard style={styles.statCard}>
-            <Text style={styles.statNumber}>{badges.length}</Text>
-            <Text style={styles.statLabel}>Badges</Text>
-          </GlassCard>
-        </View>
-
-        {/* Overall Progress */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Overall Progress</Text>
-            <Text style={styles.sectionValue}>{completionRate}%</Text>
-          </View>
-          <ProgressBar progress={completionRate} color={Colors.accent} height={8} />
-          <Text style={styles.progressSub}>{completedTasks} of {totalTasks} tasks completed</Text>
-        </GlassCard>
-
-        {/* Today's Tasks */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Due Today</Text>
-            <View style={styles.countPill}>
-              <Text style={styles.countText}>{todayTasks.length}</Text>
-            </View>
-          </View>
-          {todayTasks.length === 0 ? (
-            <View style={styles.emptySmall}>
-              <Text style={styles.emptySmallText}>All clear for today! 🎉</Text>
-            </View>
-          ) : (
-            todayTasks.slice(0, 3).map(t => (
-              <View key={t.id} style={styles.taskRow}>
-                <View style={[styles.taskDot, { backgroundColor: Colors.priority[t.priority] ?? Colors.accent }]} />
-                <Text style={styles.taskTitle} numberOfLines={1}>{t.title}</Text>
-                <View style={[styles.priorityBadge, { borderColor: Colors.priority[t.priority] }]}>
-                  <Text style={[styles.priorityText, { color: Colors.priority[t.priority] }]}>{t.priority}</Text>
-                </View>
-              </View>
-            ))
-          )}
-          {todayTasks.length > 3 ? (
-            <Text style={styles.moreText}>+{todayTasks.length - 3} more tasks</Text>
-          ) : null}
-        </GlassCard>
-
-        {/* Badge Showcase */}
-        {recentBadges.length > 0 ? (
-          <GlassCard style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Recent Badges</Text>
-            <View style={styles.badgeRow}>
-              {recentBadges.map(b => (
-                <BadgePill key={b.id} type={b.type} name={b.name} size="md" />
-              ))}
-            </View>
-          </GlassCard>
-        ) : (
-          <GlassCard style={styles.sectionCard} glow>
-            <Text style={styles.sectionTitle}>Your Badge Journey</Text>
-            <Text style={styles.badgeHint}>Complete 10 tasks to earn your first 🥉 Bronze Badge!</Text>
-            <ProgressBar progress={Math.min(100, (completedTasks / 10) * 100)} color={Colors.badge.bronze} height={6} />
-            <Text style={styles.progressSub}>{completedTasks}/10 tasks to Bronze</Text>
-          </GlassCard>
-        )}
-
-        {/* Upcoming Events */}
-        {upcomingEvents.length > 0 ? (
-          <GlassCard style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Upcoming Events</Text>
-            {upcomingEvents.map(h => (
-              <View key={h.id} style={styles.eventRow}>
-                <MaterialIcons name="event" size={16} color={Colors.accent} />
-                <Text style={styles.eventName} numberOfLines={1}>{h.name}</Text>
-                {h.end_date ? (
-                  <Text style={styles.eventDate}>
-                    {new Date(h.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </Text>
-                ) : null}
-              </View>
-            ))}
-          </GlassCard>
-        ) : null}
-
-        {/* Quick Access Grid */}
-        <Text style={[styles.sectionTitle, { color: colors.text, marginHorizontal: Spacing.xs, marginBottom: Spacing.sm }]}>Quick Access</Text>
-        <View style={styles.quickGrid}>
-          {[
-            { label: 'Study', emoji: '📚', route: '/(tabs)/study', color: colors.accent },
-            { label: 'Events', emoji: '📅', route: '/(tabs)/events', color: Colors.warning },
-            { label: 'Books', emoji: '📖', route: '/modules/books', color: '#7E57C2' },
-            { label: 'Podcasts', emoji: '🎧', route: '/modules/podcasts', color: '#1DB954' },
-            { label: 'Placement', emoji: '💼', route: '/modules/placement', color: '#FF9800' },
-            { label: 'Exercise', emoji: '🏃', route: '/modules/exercise', color: Colors.success },
-            { label: 'Goals', emoji: '🎯', route: '/(tabs)/goals', color: '#AB47BC' },
-            { label: 'Badges', emoji: '🏆', route: '/modules/badges', color: '#FFD700' },
-          ].map(card => (
+          <View style={styles.headerRight}>
             <Pressable
-              key={card.label}
-              style={({ pressed }) => [
-                styles.gridCard,
-                { backgroundColor: colors.glass, borderColor: colors.border },
-                pressed && { opacity: 0.7 }
-              ]}
-              onPress={() => router.push(card.route as any)}
+              style={[styles.iconBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
+              onPress={() => showAlert('Search', 'Search coming soon')}
             >
-              <View style={[styles.gridIconCircle, { backgroundColor: card.color + '15' }]}>
-                <Text style={styles.gridEmoji}>{card.emoji}</Text>
-              </View>
-              <Text style={[styles.gridCardLabel, { color: colors.text }]} numberOfLines={1}>{card.label}</Text>
+              <Search size={18} color={colors.textMuted} strokeWidth={2} />
             </Pressable>
+            <Pressable style={[styles.iconBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}>
+              <Bell size={18} color={colors.textMuted} strokeWidth={2} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Overall Progress Banner */}
+        <GlassCard style={[styles.progressBanner, { backgroundColor: colors.accent }]} padding={20}>
+          <View style={styles.progressBannerTop}>
+            <View>
+              <Text style={styles.progressBannerTitle}>Overall Progress</Text>
+              <Text style={styles.progressBannerSub}>{completedTasks} of {totalTasks} tasks done</Text>
+            </View>
+            <Text style={styles.progressBannerPct}>{completionRate}%</Text>
+          </View>
+          <View style={styles.progressBannerBar}>
+            <View style={[styles.progressBannerFill, { width: `${completionRate}%` }]} />
+          </View>
+        </GlassCard>
+
+        {/* Quick Stats Grid */}
+        <View style={styles.statsGrid}>
+          {quickStats.map((s, i) => (
+            <GlassCard key={i} style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]} padding={14}>
+              <View style={[styles.statIconBox, { backgroundColor: s.color + '18' }]}>
+                <s.icon size={18} color={s.color} strokeWidth={2} />
+              </View>
+              <Text style={[styles.statValue, { color: colors.text }]}>{s.value}</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>{s.label}</Text>
+            </GlassCard>
           ))}
         </View>
 
-        {/* Pomodoro Quick Start */}
-        <Pressable style={styles.pomodoroBtn} onPress={() => setPomodoroModal(true)}>
-          <MaterialIcons name="timer" size={20} color={Colors.accent} />
-          <Text style={styles.pomodoroBtnText}>Open Pomodoro Timer</Text>
-          <MaterialIcons name="chevron-right" size={20} color={Colors.accent} />
+        {/* Today's Priorities */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Priorities</Text>
+            <Pressable onPress={() => router.push('/(tabs)/tasks')} style={styles.seeAllBtn}>
+              <Text style={[styles.seeAll, { color: colors.accent }]}>See all</Text>
+              <ChevronRight size={14} color={colors.accent} strokeWidth={2} />
+            </Pressable>
+          </View>
+          {todayTasks.length === 0 ? (
+            <GlassCard style={{ backgroundColor: colors.surface, borderColor: colors.border }} padding={20}>
+              <View style={styles.emptyState}>
+                <CheckCircle2 size={32} color={Colors.success} strokeWidth={1.5} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>All clear for today</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>No tasks due today. Great work!</Text>
+              </View>
+            </GlassCard>
+          ) : (
+            <GlassCard style={{ backgroundColor: colors.surface, borderColor: colors.border }} padding={0}>
+              {todayTasks.slice(0, 4).map((t, idx) => (
+                <View key={t.id}>
+                  {idx > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+                  <View style={styles.taskRow}>
+                    <View style={[styles.taskPriorityDot, { backgroundColor: priorityColor(t.priority) }]} />
+                    <View style={styles.taskContent}>
+                      <Text style={[styles.taskTitle, { color: colors.text }]} numberOfLines={1}>{t.title}</Text>
+                      {t.deadline && (
+                        <View style={styles.taskMeta}>
+                          <Clock size={11} color={colors.textMuted} strokeWidth={2} />
+                          <Text style={[styles.taskDeadline, { color: colors.textMuted }]}>
+                            {new Date(t.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={[styles.priorityChip, { borderColor: priorityColor(t.priority) }]}>
+                      <Text style={[styles.priorityChipText, { color: priorityColor(t.priority) }]}>{t.priority}</Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+              {todayTasks.length > 4 && (
+                <Pressable style={[styles.moreRow, { borderTopWidth: 1, borderTopColor: colors.border }]} onPress={() => router.push('/(tabs)/tasks')}>
+                  <Text style={[styles.moreText, { color: colors.accent }]}>+{todayTasks.length - 4} more tasks</Text>
+                </Pressable>
+              )}
+            </GlassCard>
+          )}
+        </View>
+
+        {/* Upcoming Events */}
+        {upcomingEvents.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Upcoming Deadlines</Text>
+              <Pressable onPress={() => router.push('/(tabs)/events')} style={styles.seeAllBtn}>
+                <Text style={[styles.seeAll, { color: colors.accent }]}>See all</Text>
+                <ChevronRight size={14} color={colors.accent} strokeWidth={2} />
+              </Pressable>
+            </View>
+            <GlassCard style={{ backgroundColor: colors.surface, borderColor: colors.border }} padding={0}>
+              {upcomingEvents.map((h, idx) => {
+                const daysLeft = h.end_date
+                  ? Math.ceil((new Date(h.end_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                  : null;
+                return (
+                  <View key={h.id}>
+                    {idx > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+                    <View style={styles.eventRow}>
+                      <View style={[styles.eventDot, { backgroundColor: daysLeft !== null && daysLeft <= 3 ? Colors.error : Colors.warning }]} />
+                      <Text style={[styles.eventName, { color: colors.text }]} numberOfLines={1}>{h.name}</Text>
+                      {daysLeft !== null && (
+                        <Text style={[styles.eventDays, { color: daysLeft <= 3 ? Colors.error : colors.textMuted }]}>
+                          {daysLeft === 0 ? 'Today' : `${daysLeft}d`}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </GlassCard>
+          </View>
+        )}
+
+        {/* Quick Access */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: Spacing.md }]}>Quick Access</Text>
+          <View style={styles.shortcutGrid}>
+            {moduleShortcuts.map((m, i) => (
+              <Pressable
+                key={i}
+                style={({ pressed }) => [
+                  styles.shortcutCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => router.push(m.route as any)}
+              >
+                <View style={[styles.shortcutIcon, { backgroundColor: m.color + '18' }]}>
+                  <m.icon size={20} color={m.color} strokeWidth={2} />
+                </View>
+                <Text style={[styles.shortcutLabel, { color: colors.text }]}>{m.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Focus Timer CTA */}
+        <Pressable
+          style={[styles.focusCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => setPomodoroModal(true)}
+        >
+          <View style={[styles.focusIcon, { backgroundColor: colors.accent + '18' }]}>
+            <Timer size={22} color={colors.accent} strokeWidth={2} />
+          </View>
+          <View style={styles.focusText}>
+            <Text style={[styles.focusTitle, { color: colors.text }]}>Focus Timer</Text>
+            <Text style={[styles.focusSub, { color: colors.textMuted }]}>Start a Pomodoro session</Text>
+          </View>
+          <ChevronRight size={18} color={colors.textMuted} strokeWidth={2} />
         </Pressable>
       </ScrollView>
 
-      {/* Mood Modal */}
-      <Modal visible={moodModal} transparent animationType="fade" onRequestClose={() => setMoodModal(false)}>
-        <Pressable style={styles.overlay} onPress={() => setMoodModal(false)}>
-          <Pressable style={styles.modalCard} onPress={e => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>How are you feeling?</Text>
-            <Text style={styles.modalSub}>Track your daily mood journey</Text>
-            <MoodPicker selected={todayMood?.mood} onSelect={handleMoodSelect} />
-          </Pressable>
-        </Pressable>
-      </Modal>
-
       {/* Pomodoro Modal */}
       <Modal visible={pomodoroModal} transparent animationType="slide" onRequestClose={() => setPomodoroModal(false)}>
-        <Pressable style={styles.overlay} onPress={() => setPomodoroModal(false)}>
-          <Pressable style={styles.modalCard} onPress={e => e.stopPropagation()}>
-            <Pressable style={styles.closeBtn} onPress={() => setPomodoroModal(false)}>
-              <MaterialIcons name="close" size={22} color={Colors.textMuted} />
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPomodoroModal(false)} />
+          <View style={[styles.modalSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.modalHandle} />
+            <Pressable style={styles.modalClose} onPress={() => setPomodoroModal(false)}>
+              <X size={20} color={colors.textMuted} strokeWidth={2} />
             </Pressable>
             <PomodoroTimer />
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       <BadgeAchievement
@@ -279,11 +285,6 @@ export default function DashboardScreen() {
         badgeName={badgePreview?.name ?? ''}
         onDismiss={() => setBadgePreview(null)}
       />
-
-      <SidebarDrawer
-        visible={drawerVisible}
-        onClose={() => setDrawerVisible(false)}
-      />
     </View>
   );
 }
@@ -291,59 +292,122 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
+
+  // Header
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
-  greeting: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  name: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xxl, fontWeight: '700', marginTop: 2 },
-  date: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, marginTop: 2 },
-  avatarBtn: { width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.surfaceLight, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  avatarEmoji: { fontSize: 26 },
-  moodBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(41,182,246,0.08)', borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.accent, padding: Spacing.base, marginBottom: Spacing.base, gap: Spacing.md },
-  moodBannerEmoji: { fontSize: 28 },
-  moodBannerText: { flex: 1 },
-  moodBannerTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.base, fontWeight: '600' },
-  moodBannerSub: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, marginTop: 2 },
-  quoteCard: { marginBottom: Spacing.base, gap: Spacing.sm },
-  quoteIcon: { fontSize: 24 },
-  quoteText: { color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.base, fontStyle: 'italic', lineHeight: 22 },
-  quoteAuthor: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
-  statsRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.base },
-  statCard: { flex: 1, alignItems: 'center', padding: Spacing.md },
-  statNumber: { color: Colors.accent, fontFamily: 'Arial', fontSize: Typography.sizes.xxl, fontWeight: '700' },
-  statLabel: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.xs, marginTop: 2 },
-  sectionCard: { marginBottom: Spacing.base, gap: Spacing.md },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.lg, fontWeight: '700' },
-  sectionValue: { color: Colors.accent, fontFamily: 'Arial', fontSize: Typography.sizes.lg, fontWeight: '700' },
-  progressSub: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  countPill: { backgroundColor: Colors.surfaceLighter, paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.full },
-  countText: { color: Colors.accent, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '700' },
-  emptySmall: { paddingVertical: Spacing.sm },
-  emptySmallText: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.base, textAlign: 'center' },
-  taskRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs },
-  taskDot: { width: 8, height: 8, borderRadius: 4 },
-  taskTitle: { flex: 1, color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.base },
-  priorityBadge: { borderWidth: 1, borderRadius: Radius.full, paddingHorizontal: 6, paddingVertical: 1 },
-  priorityText: { fontFamily: 'Arial', fontSize: Typography.sizes.xs, fontWeight: '600' },
-  moreText: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, textAlign: 'center' },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  badgeHint: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  eventRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs },
-  eventName: { flex: 1, color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.base },
-  eventDate: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  pomodoroBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surfaceLight, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.base, gap: Spacing.md, marginBottom: Spacing.base },
-  pomodoroBtnText: { flex: 1, color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.base, fontWeight: '600' },
-  modulesRow: { flexDirection: 'row', gap: Spacing.sm, paddingVertical: Spacing.xs },
-  moduleChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceLight },
-  moduleChipText: { color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: Spacing.base },
-  modalCard: { backgroundColor: Colors.surface, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.border, padding: Spacing.xl, width: '100%', gap: Spacing.md },
-  modalTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xl, fontWeight: '700' },
-  modalSub: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
-  closeBtn: { alignSelf: 'flex-end', padding: Spacing.xs },
-  menuBtn: { padding: 4, marginRight: 2 },
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
-  gridCard: { width: '22.8%', padding: Spacing.xs, borderRadius: Radius.md, borderWidth: 1, alignItems: 'center', gap: Spacing.xs, minHeight: 80, justifyContent: 'center' },
-  gridIconCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  gridEmoji: { fontSize: 20 },
-  gridCardLabel: { fontFamily: 'Arial', fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  headerLeft: { flex: 1 },
+  headerRight: { flexDirection: 'row', gap: Spacing.sm },
+  greetingRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 },
+  greeting: { fontSize: Typography.sizes.sm },
+  name: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold, marginBottom: 2 },
+  date: { fontSize: Typography.sizes.sm },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Progress Banner
+  progressBanner: {
+    marginBottom: Spacing.base,
+    borderColor: 'transparent',
+    borderRadius: Radius.lg,
+  },
+  progressBannerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  progressBannerTitle: { color: '#fff', fontSize: Typography.sizes.base, fontWeight: Typography.weights.semibold },
+  progressBannerSub: { color: 'rgba(255,255,255,0.7)', fontSize: Typography.sizes.sm, marginTop: 2 },
+  progressBannerPct: { color: '#fff', fontSize: Typography.sizes.xxxl, fontWeight: Typography.weights.bold },
+  progressBannerBar: { height: 6, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 3, overflow: 'hidden' },
+  progressBannerFill: { height: '100%', backgroundColor: '#fff', borderRadius: 3 },
+
+  // Stats Grid
+  statsGrid: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg, flexWrap: 'wrap' },
+  statCard: { flex: 1, minWidth: '45%', gap: 6 },
+  statIconBox: { width: 34, height: 34, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
+  statValue: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold },
+  statLabel: { fontSize: Typography.sizes.xs },
+
+  // Section
+  section: { marginBottom: Spacing.lg },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  sectionTitle: { fontSize: Typography.sizes.lg, fontWeight: Typography.weights.bold },
+  seeAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  seeAll: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.medium },
+
+  // Empty state
+  emptyState: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.sm },
+  emptyTitle: { fontSize: Typography.sizes.base, fontWeight: Typography.weights.semibold },
+  emptySubtitle: { fontSize: Typography.sizes.sm, textAlign: 'center' },
+
+  // Task row
+  divider: { height: 1, marginHorizontal: Spacing.base },
+  taskRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.base, paddingVertical: 14, gap: Spacing.md },
+  taskPriorityDot: { width: 8, height: 8, borderRadius: 4 },
+  taskContent: { flex: 1, gap: 3 },
+  taskTitle: { fontSize: Typography.sizes.base, fontWeight: Typography.weights.medium },
+  taskMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  taskDeadline: { fontSize: Typography.sizes.xs },
+  priorityChip: { borderWidth: 1, borderRadius: Radius.full, paddingHorizontal: 8, paddingVertical: 2 },
+  priorityChipText: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.semibold },
+  moreRow: { padding: Spacing.md, alignItems: 'center' },
+  moreText: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.medium },
+
+  // Event row
+  eventRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.base, paddingVertical: 14, gap: Spacing.md },
+  eventDot: { width: 8, height: 8, borderRadius: 4 },
+  eventName: { flex: 1, fontSize: Typography.sizes.base, fontWeight: Typography.weights.medium },
+  eventDays: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
+
+  // Shortcuts
+  shortcutGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  shortcutCard: {
+    width: '30.5%',
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  shortcutIcon: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
+  shortcutLabel: { fontSize: Typography.sizes.xs, fontWeight: Typography.weights.semibold, textAlign: 'center' },
+
+  // Focus card
+  focusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.base,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    marginBottom: Spacing.base,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  focusIcon: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
+  focusText: { flex: 1 },
+  focusTitle: { fontSize: Typography.sizes.base, fontWeight: Typography.weights.semibold },
+  focusSub: { fontSize: Typography.sizes.sm, marginTop: 2 },
+
+  // Modal
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
+  modalSheet: {
+    borderTopLeftRadius: Radius.xxl,
+    borderTopRightRadius: Radius.xxl,
+    borderWidth: 1,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xxl,
+  },
+  modalHandle: { width: 36, height: 4, backgroundColor: Colors.textDim, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.base },
+  modalClose: { alignSelf: 'flex-end', padding: Spacing.xs },
 });

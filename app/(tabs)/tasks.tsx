@@ -2,66 +2,73 @@ import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
   KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import {
+  Plus, Search, CheckCircle2, Circle, Clock, Flag,
+  Trash2, CheckSquare, X, Filter,
+} from 'lucide-react-native';
 import { useAlert } from '@/template';
 import { useTasks } from '@/hooks/useTasks';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
-import { GlassCard } from '@/components/ui/GlassCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { AppInput } from '@/components/ui/AppInput';
 import { TaskCard } from '@/components/feature/TaskCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 
-const PRIORITIES = ['All', 'Critical', 'High', 'Medium', 'Low'];
+const FILTERS = ['All', 'Today', 'Upcoming', 'Completed', 'High Priority'];
 const PRIORITY_VALUES = ['Low', 'Medium', 'High', 'Critical'] as const;
 const CATEGORIES = ['General', 'College', 'Placement', 'Coding', 'Research', 'Personal', 'Health', 'Other'];
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const { tasks, loading, addTask, removeTask, completeTask } = useTasks();
   const { showAlert } = useAlert();
 
   const [filter, setFilter] = useState('All');
-  const [showCompleted, setShowCompleted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState('');
   const [category, setCategory] = useState('General');
-  const [priority, setPriority] = useState<'Low' | 'Medium' | 'High' | 'Critical'>('Medium');
+  const [priority, setPriority] = useState<typeof PRIORITY_VALUES[number]>('Medium');
+
+  const today = new Date();
 
   const filtered = useMemo(() => {
-    return tasks.filter(t => {
-      if (t.completed !== showCompleted) return false;
-      if (filter === 'All') return true;
-      return t.priority === filter;
-    });
-  }, [tasks, filter, showCompleted]);
+    let list = tasks;
+    if (searchQuery.trim()) {
+      list = list.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    switch (filter) {
+      case 'Today':
+        return list.filter(t => !t.completed && t.deadline && new Date(t.deadline).toDateString() === today.toDateString());
+      case 'Upcoming':
+        return list.filter(t => !t.completed && t.deadline && new Date(t.deadline) > today);
+      case 'Completed':
+        return list.filter(t => t.completed);
+      case 'High Priority':
+        return list.filter(t => !t.completed && (t.priority === 'High' || t.priority === 'Critical'));
+      default:
+        return list.filter(t => !t.completed);
+    }
+  }, [tasks, filter, searchQuery]);
 
   const completedCount = tasks.filter(t => t.completed).length;
   const totalCount = tasks.length;
 
-  const resetForm = () => {
-    setTitle(''); setDescription(''); setDeadline('');
-    setCategory('General'); setPriority('Medium');
-  };
+  const resetForm = () => { setTitle(''); setDescription(''); setDeadline(''); setCategory('General'); setPriority('Medium'); };
 
   const handleAdd = async () => {
     if (!title.trim()) { showAlert('Missing Title', 'Please enter a task title.'); return; }
     setSaving(true);
-    await addTask({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      deadline: deadline.trim() || undefined,
-      category,
-      priority,
-      completed: false,
-    });
+    await addTask({ title: title.trim(), description: description.trim() || undefined, deadline: deadline.trim() || undefined, category, priority, completed: false });
     setSaving(false);
     setModal(false);
     resetForm();
@@ -70,9 +77,7 @@ export default function TasksScreen() {
   const handleComplete = async (id: string) => {
     const result = await completeTask(id);
     if (result?.badge) {
-      showAlert(`${result.badgeName} Earned! 🎉`, `You have unlocked the ${result.badgeName}! Keep going!`, [
-        { text: 'Awesome!', style: 'default' },
-      ]);
+      showAlert('Badge Earned!', `You unlocked the ${result.badgeName}! Keep going!`, [{ text: 'Awesome!', style: 'default' }]);
     }
   };
 
@@ -84,62 +89,84 @@ export default function TasksScreen() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.screenTitle}>Smart Tasks</Text>
-          <Text style={styles.screenSub}>{completedCount}/{totalCount} completed</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Tasks</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>{completedCount}/{totalCount} completed</Text>
         </View>
-        <Pressable style={styles.addBtn} onPress={() => setModal(true)}>
-          <MaterialIcons name="add" size={26} color="#fff" />
+        <Pressable
+          style={[styles.addBtn, { backgroundColor: colors.accent }]}
+          onPress={() => setModal(true)}
+        >
+          <Plus size={22} color="#fff" strokeWidth={2.5} />
         </Pressable>
       </View>
 
       {/* Progress */}
       <View style={styles.progressRow}>
-        <ProgressBar progress={totalCount > 0 ? (completedCount / totalCount) * 100 : 0} height={5} />
+        <ProgressBar
+          progress={totalCount > 0 ? (completedCount / totalCount) * 100 : 0}
+          height={4}
+          color={colors.accent}
+          backgroundColor={colors.surfaceLight}
+        />
       </View>
 
-      {/* Filter Bar */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterBar}
-      >
-        {PRIORITIES.map(p => (
+      {/* Search */}
+      <View style={[styles.searchBar, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}>
+        <Search size={16} color={colors.textMuted} strokeWidth={2} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Search tasks..."
+          placeholderTextColor={colors.textMuted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <Pressable onPress={() => setSearchQuery('')}>
+            <X size={16} color={colors.textMuted} strokeWidth={2} />
+          </Pressable>
+        )}
+      </View>
+
+      {/* Filter Chips */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterBar}>
+        {FILTERS.map(f => (
           <Pressable
-            key={p}
-            style={[styles.filterChip, filter === p && styles.filterChipActive, p !== 'All' && filter === p && { borderColor: Colors.priority[p] ?? Colors.accent }]}
-            onPress={() => setFilter(p)}
+            key={f}
+            style={[
+              styles.filterChip,
+              { borderColor: colors.border, backgroundColor: colors.surfaceLight },
+              filter === f && { borderColor: colors.accent, backgroundColor: colors.accent + '18' },
+            ]}
+            onPress={() => setFilter(f)}
           >
-            <Text style={[styles.filterChipText, filter === p && styles.filterChipTextActive, p !== 'All' && filter === p && { color: Colors.priority[p] ?? Colors.accent }]}>
-              {p}
-            </Text>
+            <Text style={[
+              styles.filterChipText,
+              { color: colors.textMuted },
+              filter === f && { color: colors.accent },
+            ]}>{f}</Text>
           </Pressable>
         ))}
-        <Pressable
-          style={[styles.filterChip, showCompleted && styles.filterChipDone]}
-          onPress={() => setShowCompleted(s => !s)}
-        >
-          <MaterialIcons name={showCompleted ? 'check-circle' : 'check-circle-outline'} size={14} color={showCompleted ? Colors.success : Colors.textMuted} />
-          <Text style={[styles.filterChipText, showCompleted && { color: Colors.success }]}>Done</Text>
-        </Pressable>
       </ScrollView>
 
       {/* Task List */}
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={Colors.accent} size="large" />
+          <ActivityIndicator color={colors.accent} size="large" />
         </View>
       ) : filtered.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>{showCompleted ? '🏆' : '✅'}</Text>
-          <Text style={styles.emptyTitle}>{showCompleted ? 'No completed tasks yet' : 'No tasks here'}</Text>
-          <Text style={styles.emptySubtitle}>
-            {showCompleted ? 'Complete tasks to see them here' : 'Tap + to add a new task'}
+          <CheckSquare size={52} color={colors.textDim} strokeWidth={1.5} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+            {filter === 'Completed' ? 'No completed tasks yet' : 'No tasks here'}
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+            {filter === 'Completed' ? 'Complete tasks to see them here' : 'Tap + to add a new task'}
           </Text>
         </View>
       ) : (
@@ -158,42 +185,47 @@ export default function TasksScreen() {
         </ScrollView>
       )}
 
-      {/* Add Task Modal */}
-      <Modal visible={modal} transparent animationType="slide" onRequestClose={() => setModal(false)}>
+      {/* Add Task Sheet */}
+      <Modal visible={modal} transparent animationType="slide" onRequestClose={() => { setModal(false); resetForm(); }}>
         <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setModal(false)} />
-          <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>New Task</Text>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => { setModal(false); resetForm(); }} />
+          <View style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: insets.bottom + 16 }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetTitle, { color: colors.text }]}>New Task</Text>
+              <Pressable onPress={() => { setModal(false); resetForm(); }}>
+                <X size={20} color={colors.textMuted} strokeWidth={2} />
+              </Pressable>
+            </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <AppInput label="Title *" placeholder="What needs to be done?" value={title} onChangeText={setTitle} />
-              <AppInput label="Description" placeholder="Optional details..." value={description} onChangeText={setDescription} multiline numberOfLines={2} />
-              <AppInput label="Deadline (YYYY-MM-DD)" placeholder="e.g. 2025-12-31" value={deadline} onChangeText={setDeadline} />
+              <AppInput label="Description" placeholder="Add details..." value={description} onChangeText={setDescription} multiline numberOfLines={2} />
+              <AppInput label="Deadline (YYYY-MM-DD)" placeholder="2025-12-31" value={deadline} onChangeText={setDeadline} />
 
-              <Text style={styles.fieldLabel}>Priority</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Priority</Text>
               <View style={styles.chipRow}>
                 {PRIORITY_VALUES.map(p => (
                   <Pressable
                     key={p}
-                    style={[styles.selectChip, priority === p && { borderColor: Colors.priority[p], backgroundColor: `${Colors.priority[p]}18` }]}
+                    style={[styles.selectChip, { borderColor: colors.border, backgroundColor: colors.surfaceLight }, priority === p && { borderColor: Colors.priority[p], backgroundColor: Colors.priority[p] + '18' }]}
                     onPress={() => setPriority(p)}
                   >
-                    <Text style={[styles.selectChipText, priority === p && { color: Colors.priority[p] }]}>{p}</Text>
+                    <Text style={[styles.selectChipText, { color: colors.textMuted }, priority === p && { color: Colors.priority[p] }]}>{p}</Text>
                   </Pressable>
                 ))}
               </View>
 
-              <Text style={styles.fieldLabel}>Category</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Category</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.base }}>
                 <View style={styles.chipRow}>
                   {CATEGORIES.map(c => (
                     <Pressable
                       key={c}
-                      style={[styles.selectChip, category === c && styles.selectChipActive]}
+                      style={[styles.selectChip, { borderColor: colors.border, backgroundColor: colors.surfaceLight }, category === c && { borderColor: colors.accent, backgroundColor: colors.accent + '18' }]}
                       onPress={() => setCategory(c)}
                     >
-                      <Text style={[styles.selectChipText, category === c && styles.selectChipActiveText]}>{c}</Text>
+                      <Text style={[styles.selectChipText, { color: colors.textMuted }, category === c && { color: colors.accent }]}>{c}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -209,32 +241,29 @@ export default function TasksScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingVertical: Spacing.md },
-  screenTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xxl, fontWeight: '700' },
-  screenSub: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, marginTop: 2 },
-  addBtn: { width: 46, height: 46, borderRadius: 23, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 },
-  progressRow: { paddingHorizontal: Spacing.base, marginBottom: Spacing.sm },
+  root: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  title: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold },
+  subtitle: { fontSize: Typography.sizes.sm, marginTop: 2 },
+  addBtn: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
+  progressRow: { paddingHorizontal: Spacing.base, marginBottom: Spacing.md },
+  searchBar: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.base, paddingHorizontal: Spacing.md, paddingVertical: 10, borderRadius: Radius.md, borderWidth: 1, gap: Spacing.sm, marginBottom: Spacing.sm },
+  searchInput: { flex: 1, fontSize: Typography.sizes.base, padding: 0 },
   filterBar: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, gap: Spacing.sm, flexDirection: 'row' },
-  filterChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceLight, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  filterChipActive: { borderColor: Colors.accent, backgroundColor: 'rgba(41,182,246,0.12)' },
-  filterChipDone: { borderColor: Colors.success, backgroundColor: 'rgba(76,175,80,0.1)' },
-  filterChipText: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
-  filterChipTextActive: { color: Colors.accent },
+  filterChip: { paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1 },
+  filterChipText: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xxl },
-  emptyEmoji: { fontSize: 64, marginBottom: Spacing.base },
-  emptyTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xl, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.sm },
-  emptySubtitle: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.base, textAlign: 'center' },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xxl, gap: Spacing.md },
+  emptyTitle: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold, textAlign: 'center' },
+  emptySubtitle: { fontSize: Typography.sizes.base, textAlign: 'center' },
   list: { paddingHorizontal: Spacing.base, paddingTop: Spacing.sm },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
-  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: Radius.xxl, borderTopRightRadius: Radius.xxl, borderWidth: 1, borderColor: Colors.border, padding: Spacing.xl, maxHeight: '90%' },
-  sheetHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.lg },
-  sheetTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xl, fontWeight: '700', marginBottom: Spacing.lg },
-  fieldLabel: { color: Colors.textSecondary, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600', marginBottom: Spacing.sm },
+  sheet: { borderTopLeftRadius: Radius.xxl, borderTopRightRadius: Radius.xxl, borderWidth: 1, padding: Spacing.xl, maxHeight: '90%' },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.base },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg },
+  sheetTitle: { fontSize: Typography.sizes.xl, fontWeight: Typography.weights.bold },
+  fieldLabel: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold, marginBottom: Spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
-  selectChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceLight },
-  selectChipActive: { borderColor: Colors.accent, backgroundColor: 'rgba(41,182,246,0.12)' },
-  selectChipText: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
-  selectChipActiveText: { color: Colors.accent },
+  selectChip: { paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1 },
+  selectChipText: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
 });

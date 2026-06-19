@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle } from 'react-native';
-import { Colors, Typography, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Colors, Typography, Radius, Spacing } from '@/constants/theme';
 
 interface PrimaryButtonProps {
   title: string;
@@ -26,8 +26,8 @@ export function PrimaryButton({ title, onPress, loading, disabled, variant = 'pr
       ]}
     >
       {loading
-        ? <ActivityIndicator color={variant === 'ghost' ? Colors.accent : '#fff'} size="small" />
-        : <Text style={[styles.label, variant === 'ghost' && styles.ghostLabel, variant === 'danger' && styles.dangerLabel]}>{title}</Text>
+        ? <ActivityIndicator color={variant === 'ghost' || variant === 'secondary' ? Colors.accent : '#fff'} size="small" />
+        : <Text style={[styles.label, styles[`${variant}Label` as keyof typeof styles] as any]}>{title}</Text>
       }
     </Pressable>
   );
@@ -35,18 +35,17 @@ export function PrimaryButton({ title, onPress, loading, disabled, variant = 'pr
 
 const styles = StyleSheet.create({
   base: {
-    height: 50,
+    height: 48,
     borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
-    ...Shadows.button,
   },
   primary: {
     backgroundColor: Colors.primary,
   },
   secondary: {
-    backgroundColor: Colors.surfaceLighter,
+    backgroundColor: Colors.surfaceLight,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -56,27 +55,24 @@ const styles = StyleSheet.create({
     borderColor: Colors.accent,
   },
   danger: {
-    backgroundColor: 'rgba(239, 83, 80, 0.15)',
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: Colors.error,
   },
   pressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.97 }],
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
   disabled: {
     opacity: 0.4,
   },
   label: {
-    color: Colors.text,
+    color: '#FFFFFF',
     fontSize: Typography.sizes.base,
-    fontFamily: Typography.fontFamily,
     fontWeight: Typography.weights.semibold,
   },
-  ghostLabel: {
-    color: Colors.accent,
-  },
-  dangerLabel: {
-    color: Colors.error,
-  },
+  primaryLabel: { color: '#FFFFFF' },
+  secondaryLabel: { color: Colors.text },
+  ghostLabel: { color: Colors.accent },
+  dangerLabel: { color: Colors.error },
 });

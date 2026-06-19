@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { CheckCircle2, Circle, Trash2, Clock } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
 import { Task } from '@/services/tasksService';
 
@@ -21,12 +21,14 @@ export function TaskCard({ task, onComplete, onDelete }: TaskCardProps) {
     <View style={[styles.card, task.completed && styles.completed]}>
       <View style={[styles.priorityBar, { backgroundColor: priorityColor }]} />
       <Pressable
-        style={({ pressed }) => [styles.check, task.completed && styles.checkDone, pressed && { opacity: 0.7 }]}
+        style={({ pressed }) => [styles.check, pressed && { opacity: 0.6 }]}
         onPress={onComplete}
         disabled={task.completed}
         hitSlop={8}
       >
-        {task.completed ? <MaterialIcons name="check-circle" size={22} color={Colors.success} /> : <MaterialIcons name="radio-button-unchecked" size={22} color={Colors.textMuted} />}
+        {task.completed
+          ? <CheckCircle2 size={22} color={Colors.success} />
+          : <Circle size={22} color={Colors.textMuted} />}
       </Pressable>
       <View style={styles.content}>
         <Text style={[styles.title, task.completed && styles.strikethrough]} numberOfLines={1}>{task.title}</Text>
@@ -37,14 +39,15 @@ export function TaskCard({ task, onComplete, onDelete }: TaskCardProps) {
           </View>
           <Text style={styles.category}>{task.category}</Text>
           {deadlineStr ? (
-            <Text style={[styles.deadline, isOverdue ? styles.overdue : null]}>
-              <MaterialIcons name="access-time" size={11} color={isOverdue ? Colors.error : Colors.textMuted} /> {deadlineStr}
-            </Text>
+            <View style={styles.deadlineRow}>
+              <Clock size={11} color={isOverdue ? Colors.error : Colors.textMuted} />
+              <Text style={[styles.deadline, isOverdue && styles.overdue]}>{deadlineStr}</Text>
+            </View>
           ) : null}
         </View>
       </View>
       <Pressable onPress={onDelete} hitSlop={8} style={({ pressed }) => [pressed && { opacity: 0.5 }]}>
-        <MaterialIcons name="delete-outline" size={20} color={Colors.textDim} />
+        <Trash2 size={18} color={Colors.textDim} />
       </Pressable>
     </View>
   );
@@ -54,7 +57,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.glass,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -62,29 +65,22 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.md,
     overflow: 'hidden',
     gap: Spacing.md,
+    ...({ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3, elevation: 1 }),
   },
-  completed: {
-    opacity: 0.55,
-  },
+  completed: { opacity: 0.5 },
   priorityBar: {
-    width: 4,
+    width: 3,
     alignSelf: 'stretch',
-    borderTopLeftRadius: Radius.md,
-    borderBottomLeftRadius: Radius.md,
   },
-  check: {
-    padding: Spacing.sm,
-  },
-  checkDone: {},
+  check: { padding: Spacing.sm },
   content: {
     flex: 1,
     paddingVertical: Spacing.md,
-    gap: Spacing.xs,
+    gap: 4,
   },
   title: {
     color: Colors.text,
     fontSize: Typography.sizes.base,
-    fontFamily: Typography.fontFamily,
     fontWeight: Typography.weights.medium,
   },
   strikethrough: {
@@ -94,7 +90,6 @@ const styles = StyleSheet.create({
   desc: {
     color: Colors.textMuted,
     fontSize: Typography.sizes.sm,
-    fontFamily: Typography.fontFamily,
   },
   meta: {
     flexDirection: 'row',
@@ -110,20 +105,20 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: Typography.sizes.xs,
-    fontFamily: Typography.fontFamily,
     fontWeight: Typography.weights.semibold,
   },
   category: {
     color: Colors.textMuted,
     fontSize: Typography.sizes.xs,
-    fontFamily: Typography.fontFamily,
+  },
+  deadlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   deadline: {
     color: Colors.textMuted,
     fontSize: Typography.sizes.xs,
-    fontFamily: Typography.fontFamily,
   },
-  overdue: {
-    color: Colors.error,
-  },
+  overdue: { color: Colors.error },
 });

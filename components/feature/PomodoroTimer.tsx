@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { RotateCcw, Play, Pause, SkipForward } from 'lucide-react-native';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getSupabaseClient, useAuth } from '@/template';
@@ -13,6 +14,7 @@ const MODES = [
 
 export function PomodoroTimer() {
   const { user } = useAuth();
+  const { colors } = useAppTheme();
   const [modeIdx, setModeIdx] = useState(0);
   const [phase, setPhase] = useState<'work' | 'break'>('work');
   const [secondsLeft, setSecondsLeft] = useState(MODES[0].work * 60);
@@ -28,9 +30,7 @@ export function PomodoroTimer() {
     setSecondsLeft(MODES[idx][ph === 'work' ? 'work' : 'break'] * 60);
   }, [modeIdx]);
 
-  useEffect(() => {
-    resetTimer(modeIdx, phase);
-  }, [modeIdx]);
+  useEffect(() => { resetTimer(modeIdx, phase); }, [modeIdx]);
 
   useEffect(() => {
     if (running) {
@@ -65,43 +65,55 @@ export function PomodoroTimer() {
 
   const mins = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
   const secs = (secondsLeft % 60).toString().padStart(2, '0');
-
-  const circumference = 2 * Math.PI * 44;
-  const dashOffset = circumference * (1 - progress / 100);
+  const phaseColor = phase === 'work' ? colors.accent : Colors.success;
 
   return (
-    <GlassCard style={styles.card}>
-      <Text style={styles.heading}>Pomodoro</Text>
+    <GlassCard style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={[styles.heading, { color: colors.text }]}>Focus Timer</Text>
+
       <View style={styles.modeRow}>
         {MODES.map((m, i) => (
           <Pressable
             key={m.label}
-            style={[styles.modeBtn, modeIdx === i && styles.modeBtnActive]}
+            style={[
+              styles.modeBtn,
+              { borderColor: colors.border, backgroundColor: colors.surfaceLight },
+              modeIdx === i && { borderColor: colors.accent, backgroundColor: colors.accent + '18' },
+            ]}
             onPress={() => { setModeIdx(i); setPhase('work'); }}
           >
-            <Text style={[styles.modeTxt, modeIdx === i && styles.modeTxtActive]}>{m.label}</Text>
+            <Text style={[styles.modeTxt, { color: modeIdx === i ? colors.accent : colors.textMuted }]}>{m.label}</Text>
           </Pressable>
         ))}
       </View>
+
       <View style={styles.timerCenter}>
-        <Text style={[styles.phaseLabel, { color: phase === 'work' ? Colors.accent : Colors.success }]}>
-          {phase === 'work' ? 'FOCUS' : 'BREAK'}
-        </Text>
-        <Text style={styles.time}>{mins}:{secs}</Text>
-        <Text style={styles.progressTxt}>{Math.round(progress)}%</Text>
+        <View style={[styles.phaseTag, { backgroundColor: phaseColor + '18', borderColor: phaseColor + '40' }]}>
+          <Text style={[styles.phaseLabel, { color: phaseColor }]}>
+            {phase === 'work' ? 'FOCUS' : 'BREAK'}
+          </Text>
+        </View>
+        <Text style={[styles.time, { color: colors.text }]}>{mins}:{secs}</Text>
+        <View style={[styles.progressTrack, { backgroundColor: colors.surfaceLight }]}>
+          <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: phaseColor }]} />
+        </View>
       </View>
+
       <View style={styles.controls}>
-        <Pressable style={styles.ctrlBtn} onPress={() => resetTimer(modeIdx, phase)}>
-          <MaterialIcons name="refresh" size={22} color={Colors.textMuted} />
+        <Pressable style={[styles.ctrlBtn, { backgroundColor: colors.surfaceLight }]} onPress={() => resetTimer(modeIdx, phase)}>
+          <RotateCcw size={18} color={colors.textMuted} strokeWidth={2} />
         </Pressable>
-        <Pressable style={styles.playBtn} onPress={() => setRunning(r => !r)}>
-          <MaterialIcons name={running ? 'pause' : 'play-arrow'} size={28} color="#fff" />
+        <Pressable style={[styles.playBtn, { backgroundColor: colors.accent }]} onPress={() => setRunning(r => !r)}>
+          {running
+            ? <Pause size={26} color="#fff" strokeWidth={2} />
+            : <Play size={26} color="#fff" strokeWidth={2} fill="#fff" />
+          }
         </Pressable>
         <Pressable
-          style={styles.ctrlBtn}
+          style={[styles.ctrlBtn, { backgroundColor: colors.surfaceLight }]}
           onPress={() => { const next = phase === 'work' ? 'break' : 'work'; setPhase(next); resetTimer(modeIdx, next); }}
         >
-          <MaterialIcons name="skip-next" size={22} color={Colors.textMuted} />
+          <SkipForward size={18} color={colors.textMuted} strokeWidth={2} />
         </Pressable>
       </View>
     </GlassCard>
@@ -110,17 +122,45 @@ export function PomodoroTimer() {
 
 const styles = StyleSheet.create({
   card: { gap: Spacing.md },
-  heading: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.lg, fontWeight: '700' },
+  heading: { fontSize: Typography.sizes.lg, fontWeight: Typography.weights.bold },
   modeRow: { flexDirection: 'row', gap: Spacing.sm },
-  modeBtn: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', backgroundColor: Colors.surfaceLight },
-  modeBtnActive: { borderColor: Colors.accent, backgroundColor: 'rgba(41,182,246,0.12)' },
-  modeTxt: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '600' },
-  modeTxtActive: { color: Colors.accent },
-  timerCenter: { alignItems: 'center', paddingVertical: Spacing.md },
-  phaseLabel: { fontFamily: 'Arial', fontSize: Typography.sizes.sm, fontWeight: '700', letterSpacing: 2 },
-  time: { color: Colors.text, fontFamily: 'Arial', fontSize: 52, fontWeight: '700', marginVertical: Spacing.sm },
-  progressTxt: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
+  modeBtn: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  modeTxt: { fontSize: Typography.sizes.sm, fontWeight: Typography.weights.semibold },
+  timerCenter: { alignItems: 'center', paddingVertical: Spacing.sm, gap: Spacing.md },
+  phaseTag: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  phaseLabel: { fontSize: Typography.sizes.xs, fontWeight: '700', letterSpacing: 1.5 },
+  time: { fontSize: 56, fontWeight: '700', letterSpacing: -2 },
+  progressTrack: { width: '100%', height: 6, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3 },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xl },
-  ctrlBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: Radius.full, backgroundColor: Colors.surfaceLight },
-  playBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', ...{ shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 6 } },
+  ctrlBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.full,
+  },
+  playBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
 });
