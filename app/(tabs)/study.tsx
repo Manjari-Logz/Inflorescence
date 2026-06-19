@@ -28,6 +28,10 @@ const RESOURCE_ICONS: Record<string, string> = {
 export default function StudyScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const DOMAIN_COLORS = colors?.domainColors || [
+    '#29B6F6', '#0288D1', '#4FC3F7', '#81D4FA',
+    '#00BCD4', '#26C6DA', '#4DD0E1', '#00ACC1',
+  ];
   const { domains, loading, addDomain, deleteDomain, addSubject, deleteSubject, addResource, deleteResource, updateSubjectHours } = useStudy();
   const { showAlert } = useAlert();
 
@@ -55,8 +59,6 @@ export default function StudyScreen() {
   const [resourceUrl, setResourceUrl] = useState('');
   const [savingResource, setSavingResource] = useState(false);
   const [viewerResource, setViewerResource] = useState<StudyResource | null>(null);
-
-  const DOMAIN_COLORS = colors.domainColors;
   const totalSubjects = domains.reduce((a, d) => a + (d.subjects?.length ?? 0), 0);
   const totalResources = domains.reduce((a, d) => a + (d.subjects?.reduce((b, s) => b + (s.resources?.length ?? 0), 0) ?? 0), 0);
   const totalHours = domains.reduce((a, d) => a + (d.subjects?.reduce((b, s) => b + (s.study_hours ?? 0), 0) ?? 0), 0);

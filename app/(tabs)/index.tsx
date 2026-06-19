@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
   StatusBar,
 } from 'react-native';
+import { SidebarDrawer } from '@/components/ui/SidebarDrawer';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -37,6 +38,7 @@ export default function DashboardScreen() {
   const [moodModal, setMoodModal] = useState(false);
   const [pomodoroModal, setPomodoroModal] = useState(false);
   const [badgePreview, setBadgePreview] = useState<{ type: string; name: string } | null>(null);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   const today = new Date();
   const greeting = today.getHours() < 12 ? 'Good Morning' : today.getHours() < 17 ? 'Good Afternoon' : 'Good Evening';
@@ -86,10 +88,15 @@ export default function DashboardScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>{greeting} 👋</Text>
-            <Text style={styles.name}>{user?.username ?? user?.email?.split('@')[0] ?? 'Champion'}</Text>
-            <Text style={styles.date}>{dateStr}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+            <Pressable onPress={() => setDrawerVisible(true)} hitSlop={12} style={styles.menuBtn}>
+              <MaterialIcons name="menu" size={26} color={colors.text} />
+            </Pressable>
+            <View>
+              <Text style={styles.greeting}>{greeting} 👋</Text>
+              <Text style={styles.name}>{user?.username ?? user?.email?.split('@')[0] ?? 'Champion'}</Text>
+              <Text style={styles.date}>{dateStr}</Text>
+            </View>
           </View>
           <Pressable style={styles.avatarBtn} onPress={() => setMoodModal(true)}>
             <Text style={styles.avatarEmoji}>{moodOption ? moodOption.emoji : '😐'}</Text>
@@ -205,20 +212,35 @@ export default function DashboardScreen() {
           </GlassCard>
         ) : null}
 
-        {/* Growth Modules Quick Access */}
-        <GlassCard style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Explore Modules</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.modulesRow}>
-              {MODULE_ROUTES.slice(0, 6).map(m => (
-                <Pressable key={m.key} style={styles.moduleChip} onPress={() => router.push(m.route as any)}>
-                  <MaterialIcons name={m.icon as any} size={18} color={m.color} />
-                  <Text style={styles.moduleChipText}>{m.title}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </ScrollView>
-        </GlassCard>
+        {/* Quick Access Grid */}
+        <Text style={[styles.sectionTitle, { color: colors.text, marginHorizontal: Spacing.xs, marginBottom: Spacing.sm }]}>Quick Access</Text>
+        <View style={styles.quickGrid}>
+          {[
+            { label: 'Study', emoji: '📚', route: '/(tabs)/study', color: colors.accent },
+            { label: 'Events', emoji: '📅', route: '/(tabs)/events', color: Colors.warning },
+            { label: 'Books', emoji: '📖', route: '/modules/books', color: '#7E57C2' },
+            { label: 'Podcasts', emoji: '🎧', route: '/modules/podcasts', color: '#1DB954' },
+            { label: 'Placement', emoji: '💼', route: '/modules/placement', color: '#FF9800' },
+            { label: 'Exercise', emoji: '🏃', route: '/modules/exercise', color: Colors.success },
+            { label: 'Goals', emoji: '🎯', route: '/(tabs)/goals', color: '#AB47BC' },
+            { label: 'Badges', emoji: '🏆', route: '/modules/badges', color: '#FFD700' },
+          ].map(card => (
+            <Pressable
+              key={card.label}
+              style={({ pressed }) => [
+                styles.gridCard,
+                { backgroundColor: colors.glass, borderColor: colors.border },
+                pressed && { opacity: 0.7 }
+              ]}
+              onPress={() => router.push(card.route as any)}
+            >
+              <View style={[styles.gridIconCircle, { backgroundColor: card.color + '15' }]}>
+                <Text style={styles.gridEmoji}>{card.emoji}</Text>
+              </View>
+              <Text style={[styles.gridCardLabel, { color: colors.text }]} numberOfLines={1}>{card.label}</Text>
+            </Pressable>
+          ))}
+        </View>
 
         {/* Pomodoro Quick Start */}
         <Pressable style={styles.pomodoroBtn} onPress={() => setPomodoroModal(true)}>
@@ -256,6 +278,11 @@ export default function DashboardScreen() {
         badgeType={badgePreview?.type ?? ''}
         badgeName={badgePreview?.name ?? ''}
         onDismiss={() => setBadgePreview(null)}
+      />
+
+      <SidebarDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
       />
     </View>
   );
@@ -313,4 +340,10 @@ const styles = StyleSheet.create({
   modalTitle: { color: Colors.text, fontFamily: 'Arial', fontSize: Typography.sizes.xl, fontWeight: '700' },
   modalSub: { color: Colors.textMuted, fontFamily: 'Arial', fontSize: Typography.sizes.sm },
   closeBtn: { alignSelf: 'flex-end', padding: Spacing.xs },
+  menuBtn: { padding: 4, marginRight: 2 },
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
+  gridCard: { width: '22.8%', padding: Spacing.xs, borderRadius: Radius.md, borderWidth: 1, alignItems: 'center', gap: Spacing.xs, minHeight: 80, justifyContent: 'center' },
+  gridIconCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  gridEmoji: { fontSize: 20 },
+  gridCardLabel: { fontFamily: 'Arial', fontSize: 11, fontWeight: '600', textAlign: 'center' },
 });
