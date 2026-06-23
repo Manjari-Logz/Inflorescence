@@ -114,7 +114,7 @@ export function ProductivityCharts({ tasks, colors }: ProductivityChartsProps) {
                     <Text style={[styles.distCount, { color: colors.textMuted }]}>{item.count} tasks</Text>
                   </View>
                   <View style={styles.distTrack}>
-                    <View style={[styles.distFill, { width: barWidth, backgroundColor: colors.accent }]} />
+                    <View style={[styles.distFill, { width: barWidth as any, backgroundColor: colors.accent }]} />
                   </View>
                 </View>
               );
