@@ -43,7 +43,7 @@ export default function VerifyOTPScreen() {
 
   return (
     <KeyboardAvoidingView style={[styles.root, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}>
         <Pressable onPress={() => router.back()}><Text style={[styles.backText, { color: colors.accent }]}>← Back</Text></Pressable>
         <Text style={[styles.title, { color: colors.text }]}>Verify OTP</Text>

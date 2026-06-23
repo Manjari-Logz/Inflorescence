@@ -303,3 +303,165 @@ CREATE POLICY "Users manage own goals" ON goals FOR ALL USING (auth.uid() = user
 CREATE POLICY "Users manage own achievements" ON achievements FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own notifications" ON notifications FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own settings" ON settings FOR ALL USING (auth.uid() = user_id);
+
+-- Badges
+CREATE TABLE IF NOT EXISTS badges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  module TEXT,
+  earned_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own badges" ON badges FOR ALL USING (auth.uid() = user_id);
+
+-- Short Goals
+CREATE TABLE IF NOT EXISTS short_goals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  due_date DATE,
+  progress INTEGER DEFAULT 0,
+  checklist JSONB DEFAULT '[]',
+  completed BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE short_goals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own short goals" ON short_goals FOR ALL USING (auth.uid() = user_id);
+
+-- Long Goals
+CREATE TABLE IF NOT EXISTS long_goals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  vision TEXT NOT NULL,
+  milestones JSONB DEFAULT '[]',
+  timeline TEXT,
+  resources TEXT,
+  notes TEXT,
+  progress INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE long_goals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own long goals" ON long_goals FOR ALL USING (auth.uid() = user_id);
+
+-- Dreams
+CREATE TABLE IF NOT EXISTS dreams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  category TEXT DEFAULT 'Life',
+  notes TEXT,
+  target_year INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE dreams ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own dreams" ON dreams FOR ALL USING (auth.uid() = user_id);
+
+-- Study Domains
+CREATE TABLE IF NOT EXISTS study_domains (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  color TEXT DEFAULT '#3B82F6',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE study_domains ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own study domains" ON study_domains FOR ALL USING (auth.uid() = user_id);
+
+-- Study Subjects
+CREATE TABLE IF NOT EXISTS study_subjects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  domain_id UUID NOT NULL REFERENCES study_domains(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  study_hours NUMERIC(6,1) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE study_subjects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own study subjects" ON study_subjects FOR ALL USING (auth.uid() = user_id);
+
+-- Study Resources
+CREATE TABLE IF NOT EXISTS study_resources (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  subject_id UUID NOT NULL REFERENCES study_subjects(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE study_resources ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own study resources" ON study_resources FOR ALL USING (auth.uid() = user_id);
+
+-- Pomodoro Sessions
+CREATE TABLE IF NOT EXISTS pomodoro_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  duration_minutes INTEGER DEFAULT 25,
+  type TEXT DEFAULT '25/5',
+  completed BOOLEAN DEFAULT TRUE,
+  date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE pomodoro_sessions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own pomodoro sessions" ON pomodoro_sessions FOR ALL USING (auth.uid() = user_id);
+
+-- Mood Logs
+CREATE TABLE IF NOT EXISTS mood_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  mood TEXT NOT NULL,
+  mood_score INTEGER DEFAULT 3,
+  notes TEXT,
+  date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, date)
+);
+ALTER TABLE mood_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own mood logs" ON mood_logs FOR ALL USING (auth.uid() = user_id);
+
+
+-- Habits
+CREATE TABLE IF NOT EXISTS habits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  frequency TEXT DEFAULT 'daily',
+  streak INTEGER DEFAULT 0,
+  last_completed DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE habits ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own habits" ON habits FOR ALL USING (auth.uid() = user_id);
+
+-- Habit Logs
+CREATE TABLE IF NOT EXISTS habit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  habit_id UUID NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(habit_id, date)
+);
+ALTER TABLE habit_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own habit logs" ON habit_logs FOR ALL USING (auth.uid() = user_id);
+
+-- Notes
+CREATE TABLE IF NOT EXISTS notes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own notes" ON notes FOR ALL USING (auth.uid() = user_id);
+
+-- Notifications update
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT FALSE;
+

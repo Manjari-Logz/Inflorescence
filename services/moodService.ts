@@ -41,7 +41,7 @@ export const moodService = {
     const client = getSupabaseClient();
     const today = new Date().toISOString().split('T')[0];
     const { data } = await client
-      .from('mood_entries')
+      .from('mood_logs')
       .select('*')
       .eq('user_id', userId)
       .eq('date', today)
@@ -52,7 +52,7 @@ export const moodService = {
   async fetchRecentMoods(userId: string, limit = 7) {
     const client = getSupabaseClient();
     const { data, error } = await client
-      .from('mood_entries')
+      .from('mood_logs')
       .select('*')
       .eq('user_id', userId)
       .order('date', { ascending: false })
@@ -64,7 +64,7 @@ export const moodService = {
     const client = getSupabaseClient();
     const today = new Date().toISOString().split('T')[0];
     const { data, error } = await client
-      .from('mood_entries')
+      .from('mood_logs')
       .upsert({ user_id: userId, mood, mood_score: score, date: today, notes }, { onConflict: 'user_id,date' })
       .select()
       .single();

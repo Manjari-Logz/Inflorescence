@@ -26,9 +26,20 @@ export function AuthRouter({
   const { user, loading, initialized } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [timedOut, setTimedOut] = React.useState(false);
 
   useEffect(() => {
-    if (!initialized || loading) {
+    const timer = setTimeout(() => {
+      console.warn('[AuthRouter] Loading timed out. Forcing app to render.');
+      setTimedOut(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const isEffectiveLoading = (loading || !initialized) && !timedOut;
+
+  useEffect(() => {
+    if (isEffectiveLoading) {
       return;
     }
 
@@ -37,17 +48,19 @@ export function AuthRouter({
       pathname.startsWith(route)
     );
 
-    const action = !user && !isLoginRoute && !isExcludedRoute ? 'redirect_to_login' :
-                   user && isLoginRoute ? 'redirect_to_home' : 'no_action';
+    const effectiveUser = user || ((global as any).isOfflineMode ? { id: 'offline-user' } : null);
+
+    const action = !effectiveUser && !isLoginRoute && !isExcludedRoute ? 'redirect_to_login' :
+                   effectiveUser && isLoginRoute ? 'redirect_to_home' : 'no_action';
 
     if (action === 'redirect_to_login') {
       router.push(loginRoute);
     } else if (action === 'redirect_to_home') {
       router.replace('/');
     }
-  }, [user?.id, loading, initialized, pathname, loginRoute, excludeRoutes, router]);
+  }, [user?.id, loading, initialized, timedOut, pathname, loginRoute, excludeRoutes, router]);
 
-  if (loading || !initialized) {
+  if (isEffectiveLoading) {
     return <LoadingComponent />;
   }
 
@@ -56,7 +69,9 @@ export function AuthRouter({
     pathname.startsWith(route)
   );
   
-  if (isLoginRoute || isExcludedRoute || user) {
+  const effectiveUser = user || ((global as any).isOfflineMode ? { id: 'offline-user' } : null);
+  
+  if (isLoginRoute || isExcludedRoute || effectiveUser) {
     return <>{children}</>;
   }
 
@@ -68,10 +83,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#050D1A',
   },
   defaultText: {
     fontSize: 18,
-    color: '#6B7280',
+    color: '#94A3B8',
   },
 });

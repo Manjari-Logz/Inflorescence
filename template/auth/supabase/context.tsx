@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthUser } from '../types';
 import { authService } from './service';
 
@@ -46,9 +47,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let authSubscription: any = null;
 
     const initializeAuth = async () => {
-      
+      let resolved = false;
+      const safetyTimeout = setTimeout(async () => {
+        if (!resolved && isMounted) {
+          console.warn('[Template:AuthProvider] Auth initialization timed out. Proceeding offline.');
+          (global as any).isOfflineMode = true;
+          let offlineUser = null;
+          try {
+            const cached = await AsyncStorage.getItem('@offline_user');
+            offlineUser = cached ? JSON.parse(cached) : {
+              id: 'offline-user',
+              email: 'offline@inflorescence.app',
+              username: 'Offline User',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            await AsyncStorage.setItem('@offline_user', JSON.stringify(offlineUser));
+          } catch (e) {
+            offlineUser = {
+              id: 'offline-user',
+              email: 'offline@inflorescence.app',
+              username: 'Offline User',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+          }
+          updateState({ 
+            user: offlineUser, 
+            loading: false, 
+            initialized: true 
+          });
+        }
+      }, 3000);
+
       try {
         const currentUser = await authService.getCurrentUser();
+        resolved = true;
+        clearTimeout(safetyTimeout);
         
         if (isMounted) {
           updateState({ 
@@ -65,10 +100,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
 
       } catch (error) {
-        console.warn('[Template:AuthProvider] Auth initialization failed:', error);
+        resolved = true;
+        clearTimeout(safetyTimeout);
+        console.warn('[Template:AuthProvider] Auth initialization failed, falling back offline:', error);
+        (global as any).isOfflineMode = true;
+        let offlineUser = null;
+        try {
+          const cached = await AsyncStorage.getItem('@offline_user');
+          offlineUser = cached ? JSON.parse(cached) : {
+            id: 'offline-user',
+            email: 'offline@inflorescence.app',
+            username: 'Offline User',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          await AsyncStorage.setItem('@offline_user', JSON.stringify(offlineUser));
+        } catch (e) {
+          offlineUser = {
+            id: 'offline-user',
+            email: 'offline@inflorescence.app',
+            username: 'Offline User',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+        }
         if (isMounted) {
           updateState({ 
-            user: null, 
+            user: offlineUser, 
             loading: false, 
             initialized: true 
           });

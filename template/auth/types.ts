@@ -7,6 +7,7 @@ export interface AuthUser {
   username?: string;
   created_at?: string;
   updated_at?: string;
+  email_confirmed_at?: string;
 }
 
 // Unified base result format - only use error

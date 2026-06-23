@@ -69,7 +69,10 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     if (error) { await load(); return null; }
     const completedCount = tasks.filter(t => t.completed).length + 1;
     const result = await badgesService.checkAndAwardTaskBadge(user.id, completedCount);
-    if (result.awarded) return { badge: result.type, badgeName: result.name };
+    if (result.awarded) {
+      const badgeName = 'name' in result ? result.name : result.type;
+      return { badge: result.type, badgeName };
+    }
     return null;
   };
 

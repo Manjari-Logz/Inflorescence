@@ -9,13 +9,30 @@ export function NotificationInitializer() {
 
   useEffect(() => {
     if (!user) return;
+    let isActive = true;
     (async () => {
-      await notificationsService.registerForPush(user.id);
-      await notificationsService.scheduleAllReminders(
-        tasks.filter(t => !t.completed && !t.archived).map(t => ({ title: t.title, deadline: t.deadline })),
-      );
+      try {
+        await notificationsService.registerForPush(user.id);
+      } catch (err) {
+        console.warn('[NotificationInitializer] registerForPush error:', err);
+      }
+      
+      if (!isActive) return;
+      
+      try {
+        const filteredTasks = (tasks || []).filter(t => t && !t.completed && !t.archived).map(t => ({
+          title: t.title,
+          deadline: t.deadline
+        }));
+        await notificationsService.scheduleAllReminders(filteredTasks);
+      } catch (err) {
+        console.warn('[NotificationInitializer] scheduleAllReminders error:', err);
+      }
     })();
-  }, [user?.id, tasks.length]);
+    return () => {
+      isActive = false;
+    };
+  }, [user?.id, tasks?.length]);
 
   return null;
 }
