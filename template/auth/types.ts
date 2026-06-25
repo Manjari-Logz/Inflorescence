@@ -7,7 +7,6 @@ export interface AuthUser {
   username?: string;
   created_at?: string;
   updated_at?: string;
-  email_confirmed_at?: string;
 }
 
 // Unified base result format - only use error
@@ -56,8 +55,6 @@ export interface AuthContextType {
   signInWithGoogle: () => Promise<GoogleSignInResult>;
   logout: () => Promise<LogoutResult>;
   refreshSession: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error?: string }>;
-  resendOTP: (email: string) => Promise<SendOTPResult>;
 }
 
 export interface AuthConfig {

@@ -27,7 +27,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <KeyboardAvoidingView style={[styles.root, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}>
         <Pressable onPress={() => router.back()} style={styles.backLink}>
           <Text style={[styles.backText, { color: colors.accent }]}>← Back to Sign In</Text>

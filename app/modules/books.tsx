@@ -93,10 +93,7 @@ export default function BooksScreen() {
     if (status === 'completed' && user) {
       const completed = books.filter(b => b.status === 'completed').length + 1;
       const result = await badgesService.checkReadingBadge(user.id, completed);
-      if (result.awarded) {
-        const badgeName = 'name' in result ? result.name : 'Reader Badge';
-        showAlert('Badge Unlocked!', badgeName ?? 'Reader Badge');
-      }
+      if (result.awarded) showAlert('Badge Unlocked!', result.name ?? 'Reader Badge');
     }
     setInlineEditId(null);
   };

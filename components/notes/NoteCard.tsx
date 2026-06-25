@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Note } from '@/services/notesService';
 import { MoreHorizontal, Pin, Calendar, Tag } from 'lucide-react-native';
-import { useActionSheet } from '@expo/react-native-action-sheet';
+import { useAlert } from '@/template';
 import { Colors, Typography, Radius, Shadows, Spacing } from '@/constants/theme';
 
 interface NoteCardProps {
@@ -21,42 +21,17 @@ interface NoteCardProps {
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onEdit, onDelete, onTogglePin }) => {
-  const { showActionSheetWithOptions } = useActionSheet();
+  const { showAlert } = useAlert();
 
   const handleLongPress = useCallback(() => {
-    const options = [
-      onTogglePin ? (note.pinned ? 'Unpin' : 'Pin') : undefined,
-      onEdit ? 'Edit' : undefined,
-      onDelete ? 'Delete' : undefined,
-      'Cancel',
-    ].filter(Boolean) as string[];
-    const cancelButtonIndex = options.length - 1;
-    showActionSheetWithOptions(
-      {
-        options,
-        cancelButtonIndex,
-        destructiveButtonIndex: onDelete ? options.indexOf('Delete') : undefined,
-      },
-      (buttonIndex?: number) => {
-        if (buttonIndex === undefined) return;
-        const action = options[buttonIndex];
-        switch (action) {
-          case 'Pin':
-          case 'Unpin':
-            onTogglePin?.();
-            break;
-          case 'Edit':
-            onEdit?.();
-            break;
-          case 'Delete':
-            onDelete?.();
-            break;
-          default:
-            break;
-        }
-      },
-    );
-  }, [note.pinned, onTogglePin, onEdit, onDelete, showActionSheetWithOptions]);
+    const buttons = [
+      onTogglePin ? { text: note.pinned ? 'Unpin' : 'Pin', onPress: () => onTogglePin() } : null,
+      onEdit ? { text: 'Edit', onPress: () => onEdit() } : null,
+      onDelete ? { text: 'Delete', style: 'destructive' as const, onPress: () => onDelete() } : null,
+      { text: 'Cancel', style: 'cancel' as const },
+    ].filter(Boolean) as any[];
+    showAlert('Note Options', undefined, buttons);
+  }, [note.pinned, onTogglePin, onEdit, onDelete, showAlert]);
 
   const title = note.title?.trim() ? note.title : 'Untitled Note';
   const contentPreview = note.content?.trim()

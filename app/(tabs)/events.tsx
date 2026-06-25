@@ -119,7 +119,7 @@ export default function EventsScreen() {
             const isExp = expandedId === h.id;
             const upcoming = isUpcoming(h);
             return (
-              <GlassCard key={h.id} style={[styles.hackCard, { backgroundColor: colors.surface, borderColor: colors.border, opacity: upcoming ? 1 : 0.65 }]} padding={0}>
+              <GlassCard key={h.id} style={[styles.hackCard, { backgroundColor: colors.surface, borderColor: colors.border }, !upcoming && { opacity: 0.65 }]} padding={0}>
                 <Pressable style={styles.hackHeader} onPress={() => setExpandedId(isExp ? null : h.id)}>
                   <View style={[styles.statusIndicator, { backgroundColor: upcoming ? Colors.success : colors.textDim }]} />
                   <View style={styles.hackInfo}>
