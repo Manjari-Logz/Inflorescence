@@ -15,6 +15,16 @@ export function useTasks() {
       archiveTask: async () => {},
       restoreTask: async () => {},
       refresh: async () => {},
+      
+      // Fallback History Fields & Methods
+      history: [],
+      historyLoading: false,
+      addHistory: async () => {},
+      removeHistory: async () => {},
+      clearHistory: async () => {},
+      searchHistory: () => [],
+      filterHistory: () => [],
+      refreshHistory: async () => {},
     };
   }
   return context;

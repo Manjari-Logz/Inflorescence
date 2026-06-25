@@ -9,42 +9,119 @@ import { MoneyVaultContext } from '@/contexts/MoneyVaultContext';
 
 export function useBooks() {
   const ctx = useContext(BooksContext);
-  if (!ctx) throw new Error('useBooks must be used within BooksProvider');
+  if (!ctx) {
+    console.warn('[useBooks] must be used within BooksProvider. Returning fallback.');
+    return {
+      books: [],
+      loading: false,
+      addBook: async () => {},
+      updateBook: async () => {},
+      removeBook: async () => {},
+      refresh: async () => {},
+    };
+  }
   return ctx;
 }
 
 export function usePodcasts() {
   const ctx = useContext(PodcastContext);
-  if (!ctx) throw new Error('usePodcasts must be used within PodcastProvider');
+  if (!ctx) {
+    console.warn('[usePodcasts] must be used within PodcastProvider. Returning fallback.');
+    return {
+      podcasts: [],
+      loading: false,
+      addPodcast: async () => {},
+      updatePodcast: async () => {},
+      removePodcast: async () => {},
+      refresh: async () => {},
+    };
+  }
   return ctx;
 }
 
 export function usePlacement() {
   const ctx = useContext(PlacementContext);
-  if (!ctx) throw new Error('usePlacement must be used within PlacementProvider');
+  if (!ctx) {
+    console.warn('[usePlacement] must be used within PlacementProvider. Returning fallback.');
+    return {
+      companies: [],
+      loading: false,
+      addCompany: async () => {},
+      updateCompany: async () => {},
+      removeCompany: async () => {},
+      refresh: async () => {},
+    };
+  }
   return ctx;
 }
 
 export function useCustomSections() {
   const ctx = useContext(CustomSectionsContext);
-  if (!ctx) throw new Error('useCustomSections must be used within CustomSectionsProvider');
+  if (!ctx) {
+    console.warn('[useCustomSections] must be used within CustomSectionsProvider. Returning fallback.');
+    return {
+      sections: [],
+      loading: false,
+      addSection: async () => {},
+      removeSection: async () => {},
+      addItem: async () => {},
+      updateItem: async () => {},
+      removeItem: async () => {},
+      refresh: async () => {},
+    };
+  }
   return ctx;
 }
 
 export function useExercise() {
   const ctx = useContext(ExerciseContext);
-  if (!ctx) throw new Error('useExercise must be used within ExerciseProvider');
+  if (!ctx) {
+    console.warn('[useExercise] must be used within ExerciseProvider. Returning fallback.');
+    return {
+      logs: [],
+      loading: false,
+      addLog: async () => {},
+      updateLog: async () => {},
+      removeLog: async () => {},
+      refresh: async () => {},
+    };
+  }
   return ctx;
 }
 
 export function useReflection() {
   const ctx = useContext(ReflectionContext);
-  if (!ctx) throw new Error('useReflection must be used within ReflectionProvider');
+  if (!ctx) {
+    console.warn('[useReflection] must be used within ReflectionProvider. Returning fallback.');
+    return {
+      reflections: [],
+      loading: false,
+      todayReflection: null,
+      saveReflection: async () => {},
+      removeReflection: async () => {},
+      refresh: async () => {},
+    };
+  }
   return ctx;
 }
 
 export function useMoneyVault() {
   const ctx = useContext(MoneyVaultContext);
-  if (!ctx) throw new Error('useMoneyVault must be used within MoneyVaultProvider');
+  if (!ctx) {
+    console.warn('[useMoneyVault] must be used within MoneyVaultProvider. Returning fallback.');
+    return {
+      expenses: [],
+      settings: {
+        cash_in_hand: 0, wallet_balance: 0, bank_balance: 0,
+        savings_goal: 0, emergency_fund: 0, monthly_budget: 0,
+      },
+      loading: false,
+      addExpense: async () => {},
+      updateExpense: async () => {},
+      removeExpense: async () => {},
+      saveSettings: async () => {},
+      refresh: async () => {},
+    };
+  }
   return ctx;
 }

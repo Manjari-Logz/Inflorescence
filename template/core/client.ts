@@ -70,6 +70,31 @@ class OfflineSupabaseClient {
     },
     refreshSession: async () => ({ error: null }),
     resetPasswordForEmail: async () => ({ error: null }),
+    updateUser: async (params: any) => {
+      try {
+        const saved = await AsyncStorage.getItem('@offline_user');
+        let user = saved ? JSON.parse(saved) : { id: 'offline-user' };
+        user = { ...user, ...params, updated_at: new Date().toISOString() };
+        await AsyncStorage.setItem('@offline_user', JSON.stringify(user));
+        return { data: { user }, error: null };
+      } catch (e: any) {
+        return { data: null, error: e };
+      }
+    },
+    signInWithOAuth: async (params: any) => {
+      return { data: { url: 'https://mock-oauth.inflorescence.app' }, error: null };
+    },
+    exchangeCodeForSession: async (code: string) => {
+      const mockUser = {
+        id: 'offline-user',
+        email: 'offline@inflorescence.app',
+        username: 'Offline User',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      await AsyncStorage.setItem('@offline_user', JSON.stringify(mockUser));
+      return { data: { user: mockUser, session: { user: mockUser } }, error: null };
+    },
   };
   storage = {
     from: () => ({

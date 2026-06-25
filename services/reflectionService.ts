@@ -40,8 +40,15 @@ export const reflectionService = {
 
   async getToday(userId: string, date: string) {
     const client = getSupabaseClient();
-    const { data } = await client.from('reflections').select('*').eq('user_id', userId).eq('date', date).maybeSingle();
-    return data as Reflection | null;
+    const query = client.from('reflections').select('*').eq('user_id', userId).eq('date', date);
+
+    if (typeof (query as any).maybeSingle === 'function') {
+      const { data } = await (query as any).maybeSingle();
+      return data as Reflection | null;
+    } else {
+      const { data } = await (query as any).limit(1);
+      return (data?.[0] ?? null) as Reflection | null;
+    }
   },
 
   async create(input: Omit<Reflection, 'id' | 'created_at'>) {

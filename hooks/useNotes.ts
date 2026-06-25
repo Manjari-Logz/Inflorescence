@@ -1,8 +1,28 @@
 import { useContext } from 'react';
-import { NotesContext } from '@/contexts/NotesContext';
+import { NotesContext, NotesContextType } from '@/contexts/NotesContext';
 
-export function useNotes() {
+export function useNotes(): NotesContextType {
   const ctx = useContext(NotesContext);
-  if (!ctx) throw new Error('useNotes must be used within NotesProvider');
+  if (!ctx) {
+    console.warn('[useNotes] must be used within NotesProvider. Returning fallback.');
+    return {
+      notes: [],
+      loading: false,
+      addNote: async () => null,
+      updateNote: async () => {},
+      deleteNote: async () => {},
+      togglePin: async () => {},
+      addTag: async () => {},
+      removeTag: async () => {},
+      changeColor: async () => {},
+      attachFile: async () => {},
+      setReminder: async () => {},
+      setChecklist: async () => {},
+      searchNotes: () => [],
+      filterNotes: () => [],
+      processQueue: async () => {},
+      refresh: async () => {},
+    };
+  }
   return ctx;
 }

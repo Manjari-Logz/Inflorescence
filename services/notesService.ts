@@ -5,6 +5,15 @@ export interface Note {
   user_id: string;
   title: string;
   content?: string;
+  /** Optional parent entity for attaching notes */
+  parent_type?: string; // e.g., 'task', 'study_chamber', 'resource'
+  parent_id?: string;
+  /** Optional tags array */
+  tags?: string[];
+  /** Optional color label in hex */
+  color?: string;
+  /** Pin flag */
+  pinned?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -24,7 +33,7 @@ export const notesService = {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('notes')
-      .insert(input)
+      .insert({ ...input, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .select()
       .single();
     return { data: data as Note | null, error: error?.message ?? null };

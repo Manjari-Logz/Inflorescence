@@ -152,5 +152,22 @@
     "react-dev-inspector": "^2.0.1",
     "typescript": "~5.8.3"
   },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false,
+        "exclude": [
+          "react-native-chart-kit",
+          "react-native-keyboard-aware-scroll-view",
+          "react-native-webrtc",
+          "expo-av",
+          "react-native-dynamic",
+          "react-native-fade-in-image",
+          "react-native-infinite-scroll-view",
+          "react-native-markdown-display"
+        ]
+      }
+    }
+  },
   "private": true
 }

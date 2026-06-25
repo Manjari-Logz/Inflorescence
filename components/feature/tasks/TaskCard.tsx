@@ -10,7 +10,8 @@ import {
 import { Spacing, Radius } from '@/constants/theme';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+const isNewArch = !!((global as any).RN$Bridgeless || (global as any).nativeFabricUIScheduler);
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental && !isNewArch) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -31,7 +32,7 @@ interface TaskCardProps {
   onRestore: (id: string) => void;
 }
 
-export function TaskCard({
+function TaskCardComponent({
   task,
   colors,
   onComplete,
@@ -42,6 +43,7 @@ export function TaskCard({
 }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
   const pan = useRef(new Animated.ValueXY()).current;
+  const cardScale = useRef(new Animated.Value(1)).current;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -96,6 +98,22 @@ export function TaskCard({
     setExpanded(!expanded);
   };
 
+  const handlePressIn = () => {
+    Animated.timing(cardScale, {
+      toValue: 0.98,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(cardScale, {
+      toValue: 1,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
+
   const pColor = PRIORITY_COLORS[task.priority] ?? colors.accent;
   const overdue = task.deadline && new Date(task.deadline) < new Date() && !task.completed;
 
@@ -116,7 +134,7 @@ export function TaskCard({
             },
           ]}
         >
-          <CheckCircle2 size={24} color="#FFFFFF" strokeWidth={2.5} />
+          <CheckCircle2 size={22} color="#FFFFFF" strokeWidth={2.5} />
           <Text style={styles.swipeText}>Complete</Text>
         </Animated.View>
 
@@ -134,7 +152,7 @@ export function TaskCard({
           ]}
         >
           <Text style={styles.swipeText}>Delete</Text>
-          <Trash2 size={24} color="#FFFFFF" strokeWidth={2.5} />
+          <Trash2 size={22} color="#FFFFFF" strokeWidth={2.5} />
         </Animated.View>
       </View>
     );
@@ -148,14 +166,19 @@ export function TaskCard({
         style={[
           styles.card,
           {
-            backgroundColor: colors.surface,
-            borderColor: task.completed ? 'rgba(76, 175, 80, 0.2)' : colors.border,
-            transform: [{ translateX: pan.x }],
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            borderColor: task.completed ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+            transform: [{ translateX: pan.x }, { scale: cardScale }],
           },
         ]}
         {...panResponder.panHandlers}
       >
-        <Pressable onPress={toggleExpand} style={styles.cardContent}>
+        <Pressable 
+          onPress={toggleExpand} 
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={styles.cardContent}
+        >
           <View style={styles.cardHeader}>
             <Pressable
               onPress={() => !task.completed && onComplete(task.id)}
@@ -163,9 +186,13 @@ export function TaskCard({
               hitSlop={12}
             >
               {task.completed ? (
-                <CheckCircle2 size={22} color="#4CAF50" strokeWidth={2.5} />
+                <View style={styles.checkedContainer}>
+                  <CheckCircle2 size={22} color="#4CAF50" strokeWidth={2.5} />
+                </View>
               ) : (
-                <Circle size={22} color={colors.textDim} strokeWidth={2} />
+                <View style={[styles.uncheckedContainer, { borderColor: pColor }]}>
+                  <Circle size={22} color="transparent" />
+                </View>
               )}
             </Pressable>
 
@@ -190,9 +217,9 @@ export function TaskCard({
 
             <View style={styles.chevron}>
               {expanded ? (
-                <ChevronUp size={18} color={colors.textDim} />
+                <ChevronUp size={16} color={colors.textMuted} />
               ) : (
-                <ChevronDown size={18} color={colors.textDim} />
+                <ChevronDown size={16} color={colors.textMuted} />
               )}
             </View>
           </View>
@@ -200,7 +227,7 @@ export function TaskCard({
           {!expanded && (
             <View style={styles.badgeRow}>
               {task.deadline && (
-                <View style={[styles.badge, overdue && styles.overdueBadge]}>
+                <View style={[styles.badge, overdue && styles.overdueBadge, { borderColor: 'rgba(255, 255, 255, 0.05)' }]}>
                   <Clock size={11} color={overdue ? colors.error : colors.textMuted} />
                   <Text style={[styles.badgeText, { color: overdue ? colors.error : colors.textMuted }]}>
                     {task.deadline}
@@ -212,7 +239,7 @@ export function TaskCard({
                 <Text style={[styles.badgeText, { color: pColor }]}>{task.priority}</Text>
               </View>
               {task.category && task.category !== 'General' && (
-                <View style={styles.badge}>
+                <View style={[styles.badge, { borderColor: 'rgba(255, 255, 255, 0.05)' }]}>
                   <Text style={[styles.badgeText, { color: colors.textMuted }]}>{task.category}</Text>
                 </View>
               )}
@@ -239,15 +266,15 @@ export function TaskCard({
                     progress={task.progress}
                     height={4}
                     color={pColor}
-                    backgroundColor={colors.surfaceLight}
+                    backgroundColor="rgba(255, 255, 255, 0.05)"
                   />
                 </View>
               )}
 
-              <View style={[styles.detailsGrid, { borderTopColor: colors.borderLight }]}>
+              <View style={[styles.detailsGrid, { borderTopColor: 'rgba(255, 255, 255, 0.06)' }]}>
                 {task.estimated_time ? (
                   <View style={styles.gridCell}>
-                    <Hourglass size={14} color={colors.textMuted} />
+                    <Hourglass size={13} color={colors.textMuted} />
                     <Text style={[styles.gridText, { color: colors.textSecondary }]}>
                       {task.estimated_time} mins
                     </Text>
@@ -264,7 +291,7 @@ export function TaskCard({
               </View>
 
               {task.notes ? (
-                <View style={[styles.notesSection, { backgroundColor: colors.surfaceLight }]}>
+                <View style={[styles.notesSection, { backgroundColor: 'rgba(255, 255, 255, 0.02)' }]}>
                   <View style={styles.notesTitleRow}>
                     <FileText size={12} color={colors.textSecondary} />
                     <Text style={[styles.notesTitle, { color: colors.textSecondary }]}>Notes</Text>
@@ -275,31 +302,31 @@ export function TaskCard({
                 </View>
               ) : null}
 
-              <View style={[styles.actionRow, { borderTopColor: colors.borderLight }]}>
+              <View style={[styles.actionRow, { borderTopColor: 'rgba(255, 255, 255, 0.06)' }]}>
                 {!task.completed && (
                   <Pressable
-                    style={[styles.actionButton, { backgroundColor: colors.surfaceLight }]}
+                    style={[styles.actionButton, { backgroundColor: 'rgba(255, 255, 255, 0.04)' }]}
                     onPress={() => onEdit(task)}
                   >
-                    <Edit2 size={14} color={colors.text} />
+                    <Edit2 size={13} color={colors.text} />
                     <Text style={[styles.actionButtonText, { color: colors.text }]}>Edit</Text>
                   </Pressable>
                 )}
 
                 {!task.archived ? (
                   <Pressable
-                    style={[styles.actionButton, { backgroundColor: colors.surfaceLight }]}
+                    style={[styles.actionButton, { backgroundColor: 'rgba(255, 255, 255, 0.04)' }]}
                     onPress={() => onArchive(task.id)}
                   >
-                    <Archive size={14} color={colors.text} />
+                    <Archive size={13} color={colors.text} />
                     <Text style={[styles.actionButtonText, { color: colors.text }]}>Archive</Text>
                   </Pressable>
                 ) : (
                   <Pressable
-                    style={[styles.actionButton, { backgroundColor: colors.surfaceLight }]}
+                    style={[styles.actionButton, { backgroundColor: 'rgba(255, 255, 255, 0.04)' }]}
                     onPress={() => onRestore(task.id)}
                   >
-                    <RotateCcw size={14} color="#4CAF50" />
+                    <RotateCcw size={13} color="#4CAF50" />
                     <Text style={[styles.actionButtonText, { color: '#4CAF50' }]}>Restore</Text>
                   </Pressable>
                 )}
@@ -308,7 +335,7 @@ export function TaskCard({
                   style={[styles.actionButton, { backgroundColor: 'rgba(239, 83, 80, 0.1)' }]}
                   onPress={() => onDelete(task.id, task.title)}
                 >
-                  <Trash2 size={14} color={colors.error} />
+                  <Trash2 size={13} color={colors.error} />
                   <Text style={[styles.actionButtonText, { color: colors.error }]}>Delete</Text>
                 </Pressable>
               </View>
@@ -320,10 +347,12 @@ export function TaskCard({
   );
 }
 
+export const TaskCard = React.memo(TaskCardComponent);
+
 const styles = StyleSheet.create({
   cardWrapper: {
     marginBottom: Spacing.sm,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -334,7 +363,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
   },
   swipeComplete: {
     left: 0,
@@ -353,11 +382,11 @@ const styles = StyleSheet.create({
   swipeText: {
     color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
   },
   card: {
     borderWidth: 1,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     overflow: 'hidden',
   },
   cardContent: {
@@ -372,14 +401,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  checkedContainer: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uncheckedContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+  },
   taskTitleContainer: {
     flex: 1,
     gap: 2,
   },
   title: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '600',
-    lineHeight: 20,
+    lineHeight: 19,
   },
   strikethrough: {
     textDecorationLine: 'line-through',
@@ -395,22 +439,22 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     marginTop: Spacing.sm,
-    paddingLeft: 32,
+    paddingLeft: 34,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: Radius.full,
     paddingHorizontal: 8,
     paddingVertical: 2,
     gap: 4,
   },
   overdueBadge: {
-    borderColor: 'rgba(239, 83, 80, 0.3)',
-    backgroundColor: 'rgba(239, 83, 80, 0.08)',
+    borderColor: 'rgba(239, 83, 80, 0.25)',
+    backgroundColor: 'rgba(239, 83, 80, 0.06)',
   },
   badgeText: {
     fontSize: 10,
@@ -418,7 +462,7 @@ const styles = StyleSheet.create({
   },
   expandedContent: {
     marginTop: Spacing.md,
-    paddingLeft: 32,
+    paddingLeft: 34,
     gap: Spacing.md,
   },
   detailItem: {
@@ -436,10 +480,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   progressLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
   },
   progressPct: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
   },
   detailsGrid: {
@@ -458,7 +502,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   notesSection: {
-    borderRadius: Radius.md,
+    borderRadius: Radius.sm,
     padding: Spacing.md,
     gap: 4,
   },
@@ -468,14 +512,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   notesTitle: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   notesText: {
-    fontSize: 12.5,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 16.5,
   },
   actionRow: {
     flexDirection: 'row',
@@ -488,12 +532,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: Radius.full,
     gap: 6,
   },
   actionButtonText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
   },
 });

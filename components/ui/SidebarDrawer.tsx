@@ -20,6 +20,7 @@ import {
   LayoutGrid,
   User,
   Wallet,
+  History,
 } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -56,6 +57,7 @@ const MENU_ITEMS: MenuItem[] = [
   { label: 'Analytics', icon: TrendingUp, route: '/modules/analytics' },
   { label: 'Badge Collection', icon: Award, route: '/modules/badges' },
   { label: 'Custom Sections', icon: LayoutGrid, route: '/modules/custom-sections' },
+  { label: 'Task History', icon: History, route: '/modules/history' },
   { label: 'Profile', icon: User, route: '/(tabs)/profile' },
 ];
 

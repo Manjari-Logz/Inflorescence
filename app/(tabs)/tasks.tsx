@@ -8,12 +8,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Plus, Search, CheckCircle2, Circle, Clock, Bell,
   Trash2, CheckSquare, X, Edit2, Archive, RotateCcw,
-  Menu, Folder, Inbox, ChevronRight, Sparkles, Award, Flame, Zap
+  Menu, Folder, Inbox, ChevronRight, Sparkles, Award, Flame, Zap, BarChart2, AlertCircle
 } from 'lucide-react-native';
 import { useAuth, useAlert } from '@/template';
 import { useTasks } from '@/hooks/useTasks';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useCustomSections } from '@/hooks/useModules';
+import { useBadges } from '@/hooks/useBadges';
 import { Spacing, Radius, Typography } from '@/constants/theme';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { AppInput } from '@/components/ui/AppInput';
@@ -61,9 +62,10 @@ export default function TasksScreen() {
   const { user } = useAuth();
   const { tasks, loading, addTask, updateTask, removeTask, completeTask, archiveTask, restoreTask } = useTasks();
   const { sections: customSections } = useCustomSections();
+  const { badges } = useBadges();
   const { showAlert } = useAlert();
 
-  // Redesign state
+  // Filter & Search states
   const [activeFilterId, setActiveFilterId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [modal, setModal] = useState(false);
@@ -114,10 +116,12 @@ export default function TasksScreen() {
   const completedCount = useMemo(() => tasks.filter(t => t.completed).length, [tasks]);
   const totalActive = useMemo(() => tasks.filter(t => !t.completed && !t.archived).length, [tasks]);
   const overdueCount = useMemo(() => tasks.filter(t => !t.completed && !t.archived && t.deadline && new Date(t.deadline!) < today).length, [tasks]);
+  const todayTasksCount = useMemo(() => tasks.filter(t => !t.completed && !t.archived && t.deadline && new Date(t.deadline).toDateString() === today.toDateString()).length, [tasks]);
   
   const xp = completedCount * 10;
   const level = Math.floor(xp / 100) + 1;
   const xpProgress = xp % 100;
+  const productivityScore = useMemo(() => tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0, [completedCount, tasks.length]);
 
   // Calculate Streak
   const streakCount = useMemo(() => {
@@ -261,6 +265,22 @@ export default function TasksScreen() {
     ]);
   };
 
+  const handleClearCompleted = () => {
+    const completedTasks = tasks.filter(t => t.completed);
+    if (completedTasks.length === 0) {
+      showAlert('Clear Tasks', 'No completed tasks to archive.');
+      return;
+    }
+    showAlert('Archive Completed', `Archive all ${completedTasks.length} completed tasks?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Archive', style: 'default', onPress: async () => {
+        for (const t of completedTasks) {
+          await archiveTask(t.id);
+        }
+      }},
+    ]);
+  };
+
   const renderSidebarContent = () => (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sidebarScroll}>
       <Text style={[styles.sidebarGroupTitle, { color: colors.textMuted }]}>Custom Layout Filters</Text>
@@ -307,6 +327,247 @@ export default function TasksScreen() {
     </ScrollView>
   );
 
+  // Modularized Header for FlatList
+  const renderListHeader = () => (
+    <View style={styles.listHeaderContainer}>
+      {/* 1. Glassmorphic Header Card */}
+      <View style={styles.headerCard}>
+        <View style={styles.headerTop}>
+          <View style={styles.greetingCol}>
+            <Text style={[styles.greetingText, { color: colors.textSecondary }]}>
+              Hello, {user?.username || 'Explorer'}
+            </Text>
+            <Text style={[styles.dateText, { color: colors.text }]}>
+              {today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </Text>
+            <Text style={[styles.quoteText, { color: colors.textMuted }]}>
+              "{motivationalQuote}"
+            </Text>
+          </View>
+
+          <View style={styles.headerProgressCol}>
+            <ProgressRing
+              progress={productivityScore}
+              size={68}
+              strokeWidth={6}
+              activeColor={colors.accent}
+              inactiveColor="rgba(255, 255, 255, 0.06)"
+              textColor={colors.text}
+            />
+          </View>
+        </View>
+
+        <View style={styles.headerRowDivider} />
+        
+        <View style={styles.headerProfileRow}>
+          <View style={styles.profileBadge}>
+            <LinearGradient
+              colors={[colors.accent, colors.primaryLighter || '#B8D5FF']}
+              style={styles.profileAvatar}
+            >
+              <Text style={styles.profileAvatarText}>
+                {(user?.username || 'E').charAt(0).toUpperCase()}
+              </Text>
+            </LinearGradient>
+            <Text style={[styles.profileBadgeName, { color: colors.text }]}>
+              {user?.username || 'Offline Account'}
+            </Text>
+          </View>
+
+          {/* Quick Action Buttons */}
+          <View style={styles.quickActionsContainer}>
+            <Pressable 
+              style={[styles.quickActionButton, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]} 
+              onPress={() => setActiveFilterId('high')}
+              hitSlop={8}
+            >
+              <AlertCircle size={15} color={colors.error} />
+            </Pressable>
+            
+            <Pressable 
+              style={[styles.quickActionButton, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]} 
+              onPress={handleClearCompleted}
+              hitSlop={8}
+            >
+              <Trash2 size={15} color={colors.textSecondary} />
+            </Pressable>
+
+            <Pressable 
+              style={[styles.quickActionButton, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]} 
+              onPress={() => { resetForm(); setModal(true); }}
+              hitSlop={8}
+            >
+              <Plus size={15} color={colors.accent} />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {/* 2. Task Analytics Cards */}
+      <View style={styles.analyticsSection}>
+        <View style={styles.analyticsGrid}>
+          <View style={styles.analyticsCard}>
+            <Text style={[styles.analyticsNum, { color: '#FFB74D' }]}>{todayTasksCount}</Text>
+            <Text style={[styles.analyticsLabel, { color: colors.textMuted }]}>Today</Text>
+          </View>
+          <View style={styles.analyticsCard}>
+            <Text style={[styles.analyticsNum, { color: colors.accent }]}>{totalActive}</Text>
+            <Text style={[styles.analyticsLabel, { color: colors.textMuted }]}>Pending</Text>
+          </View>
+          <View style={styles.analyticsCard}>
+            <Text style={[styles.analyticsNum, { color: '#4CAF50' }]}>{completedCount}</Text>
+            <Text style={[styles.analyticsLabel, { color: colors.textMuted }]}>Completed</Text>
+          </View>
+          <View style={[styles.analyticsCard, overdueCount > 0 && styles.overdueAnalyticsCard]}>
+            <Text style={[styles.analyticsNum, { color: overdueCount > 0 ? '#EF5350' : colors.textMuted }]}>{overdueCount}</Text>
+            <Text style={[styles.analyticsLabel, { color: colors.textMuted }]}>Overdue</Text>
+          </View>
+        </View>
+
+        {/* Featured Weekly Productivity Card */}
+        <View style={styles.weeklyProductivityCard}>
+          <LinearGradient
+            colors={['rgba(122, 162, 227, 0.1)', 'rgba(122, 162, 227, 0.02)']}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <View style={styles.weeklyProductivityHeader}>
+            <BarChart2 size={16} color={colors.accent} />
+            <Text style={[styles.weeklyProductivityTitle, { color: colors.text }]}>Weekly Completion Card</Text>
+          </View>
+          <Text style={[styles.weeklyProductivityText, { color: colors.textSecondary }]}>
+            {productivityScore >= 80 
+              ? "Exemplary focus! You are achieving your milestones efficiently."
+              : "Consistency is key. Clear small pending actions to boost daily performance."}
+          </Text>
+        </View>
+      </View>
+
+      {/* 3. Gamification System Card */}
+      <View style={styles.gameCard}>
+        <View style={styles.gameTop}>
+          <View style={styles.levelBadge}>
+            <Zap size={15} color={colors.accent} />
+            <Text style={[styles.levelText, { color: colors.text }]}>Level {level}</Text>
+          </View>
+          {streakCount > 0 && (
+            <View style={styles.streakBadge}>
+              <Flame size={15} color="#FF9800" />
+              <Text style={[styles.streakText, { color: colors.text }]}>{streakCount} Day Streak</Text>
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.xpProgressContainer}>
+          <View style={styles.xpLabelRow}>
+            <Text style={[styles.xpTextLabel, { color: colors.textSecondary }]}>Experience Points</Text>
+            <Text style={[styles.xpPoints, { color: colors.accent }]}>{xpProgress} / 100 XP</Text>
+          </View>
+          <ProgressBar
+            progress={xpProgress}
+            height={6}
+            color={colors.accent}
+            backgroundColor="rgba(255, 255, 255, 0.05)"
+          />
+        </View>
+
+        {/* Unlocked Badges Row */}
+        {badges && badges.length > 0 && (
+          <View style={styles.badgesListRow}>
+            <Text style={[styles.badgesListTitle, { color: colors.textMuted }]}>Unlocked Badges</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgesScroll}>
+              {badges.map((badge) => {
+                const badgeColor = colors.badge[badge.type] || colors.accent;
+                return (
+                  <View key={badge.id} style={[styles.badgeIconBubble, { borderColor: badgeColor + '30', backgroundColor: badgeColor + '10' }]}>
+                    <Award size={14} color={badgeColor} />
+                    <Text style={[styles.badgeIconName, { color: colors.text }]} numberOfLines={1}>{badge.name}</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+
+      {/* 4. Smart Filters & Search */}
+      <View style={styles.filterSection}>
+        {!isLargeScreen && (
+          <View style={styles.menuRow}>
+            <Pressable onPress={() => setDrawerOpen(true)} style={[styles.menuButton, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]} hitSlop={12}>
+              <Menu size={20} color={colors.text} />
+            </Pressable>
+            <Text style={[styles.pageHeading, { color: colors.text }]}>Task Board</Text>
+          </View>
+        )}
+
+        <View style={styles.searchBar}>
+          <Search size={16} color={colors.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search and explore tasks..."
+            placeholderTextColor={colors.textDim}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+              <X size={16} color={colors.textMuted} />
+            </Pressable>
+          )}
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
+          {FILTER_CHIPS.map(chip => {
+            const isSelected = activeFilterId === chip.id;
+            return (
+              <Pressable
+                key={chip.id}
+                style={[
+                  styles.chip,
+                  { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
+                  isSelected && { borderColor: colors.accent, backgroundColor: 'rgba(122, 162, 227, 0.15)' }
+                ]}
+                onPress={() => setActiveFilterId(chip.id)}
+              >
+                <Text style={[styles.chipText, { color: isSelected ? colors.accent : colors.textMuted }]}>
+                  {chip.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+    </View>
+  );
+
+  // List Empty Component Redesign
+  const renderListEmpty = () => (
+    <View style={styles.emptyCard}>
+      <View style={styles.emptyIconContainer}>
+        <Sparkles size={36} color={colors.accent} />
+      </View>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>No items matching filters</Text>
+      <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+        {activeFilterId === 'completed' ? 'Great consistency! Start planning new milestones.' : 'Clear up items or click below to build new habits.'}
+      </Text>
+      <PrimaryButton
+        title="Create Your First Task"
+        onPress={() => { resetForm(); setModal(true); }}
+        style={styles.emptyCta}
+      />
+    </View>
+  );
+
+  // List Footer Component Redesign
+  const renderListFooter = () => (
+    <View style={styles.listFooterContainer}>
+      <View style={styles.chartsSection}>
+        <ProductivityCharts tasks={tasks} colors={colors} />
+      </View>
+      <View style={{ height: insets.bottom + 120 }} />
+    </View>
+  );
+
   return (
     <LinearGradient
       colors={['#000B29', '#051944', '#000B29']}
@@ -325,207 +586,17 @@ export default function TasksScreen() {
             </View>
           )}
 
-          {/* Core Dashboard */}
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.scrollContent}
-          >
-            {/* 1. Header Section */}
-            <View style={[styles.headerCard, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: colors.border }]}>
-              <View style={styles.headerTop}>
-                {/* Greeting & Date */}
-                <View style={styles.greetingCol}>
-                  <Text style={[styles.greetingText, { color: colors.textSecondary }]}>
-                    Hello, {user?.username || 'Explorer'}
-                  </Text>
-                  <Text style={[styles.dateText, { color: colors.text }]}>
-                    {today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                  </Text>
-                  <Text style={[styles.quoteText, { color: colors.textMuted }]}>
-                    "{motivationalQuote}"
-                  </Text>
-                </View>
-
-                {/* Progress Ring & Ring stats */}
-                <View style={styles.headerProgressCol}>
-                  <ProgressRing
-                    progress={tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0}
-                    size={68}
-                    strokeWidth={6}
-                    activeColor={colors.accent}
-                    inactiveColor="rgba(255, 255, 255, 0.06)"
-                  />
-                </View>
-              </View>
-
-              {/* Avatar and Notification Bell */}
-              <View style={[styles.headerRowDivider, { borderTopColor: colors.borderLight }]} />
-              
-              <View style={styles.headerProfileRow}>
-                <View style={styles.profileBadge}>
-                  <LinearGradient
-                    colors={[colors.accent, colors.primaryLighter || '#B8D5FF']}
-                    style={styles.profileAvatar}
-                  >
-                    <Text style={styles.profileAvatarText}>
-                      {(user?.username || 'E').charAt(0).toUpperCase()}
-                    </Text>
-                  </LinearGradient>
-                  <Text style={[styles.profileBadgeName, { color: colors.text }]}>
-                    {user?.username || 'Offline Account'}
-                  </Text>
-                </View>
-
-                <View style={styles.notificationBellContainer}>
-                  <Pressable style={[styles.bellButton, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]}>
-                    <Bell size={18} color={colors.text} />
-                    <View style={styles.bellBadge} />
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-
-            {/* 2. Task Overview Carousel */}
-            <View style={styles.statsCarouselSection}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsScroll}>
-                {/* Stats items */}
-                <View style={[styles.statsCard, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: colors.border }]}>
-                  <Text style={[styles.statsNum, { color: colors.accent }]}>{totalActive}</Text>
-                  <Text style={[styles.statsLabel, { color: colors.textMuted }]}>Active</Text>
-                </View>
-
-                <View style={[styles.statsCard, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: colors.border }]}>
-                  <Text style={[styles.statsNum, { color: '#4CAF50' }]}>{completedCount}</Text>
-                  <Text style={[styles.statsLabel, { color: colors.textMuted }]}>Completed</Text>
-                </View>
-
-                <View style={[styles.statsCard, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: colors.border }]}>
-                  <Text style={[styles.statsNum, { color: '#FFB74D' }]}>
-                    {tasks.filter(t => !t.completed && !t.archived && t.deadline && new Date(t.deadline).toDateString() === today.toDateString()).length}
-                  </Text>
-                  <Text style={[styles.statsLabel, { color: colors.textMuted }]}>Today's</Text>
-                </View>
-
-                <View style={[styles.statsCard, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: colors.border }]}>
-                  <Text style={[styles.statsNum, { color: '#EF5350' }]}>{overdueCount}</Text>
-                  <Text style={[styles.statsLabel, { color: colors.textMuted }]}>Overdue</Text>
-                </View>
-
-                <View style={[styles.statsCard, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: colors.border }]}>
-                  <Text style={[styles.statsNum, { color: colors.text }]}>
-                    {tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0}%
-                  </Text>
-                  <Text style={[styles.statsLabel, { color: colors.textMuted }]}>Progress</Text>
-                </View>
-              </ScrollView>
-            </View>
-
-            {/* 8. Gamification details */}
-            <View style={[styles.gameCard, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: colors.border }]}>
-              <View style={styles.gameTop}>
-                <View style={styles.levelBadge}>
-                  <Zap size={16} color={colors.accent} />
-                  <Text style={[styles.levelText, { color: colors.text }]}>Level {level}</Text>
-                </View>
-                {streakCount > 0 && (
-                  <View style={styles.streakBadge}>
-                    <Flame size={16} color="#FF9800" />
-                    <Text style={[styles.streakText, { color: colors.text }]}>{streakCount} Day Streak</Text>
-                  </View>
-                )}
-              </View>
-              
-              <View style={styles.xpProgressContainer}>
-                <View style={styles.xpLabelRow}>
-                  <Text style={[styles.xpTextLabel, { color: colors.textSecondary }]}>Experience Points</Text>
-                  <Text style={[styles.xpPoints, { color: colors.accent }]}>{xpProgress} / 100 XP</Text>
-                </View>
-                <ProgressBar
-                  progress={xpProgress}
-                  height={6}
-                  color={colors.accent}
-                  backgroundColor="rgba(255, 255, 255, 0.05)"
-                />
-              </View>
-            </View>
-
-            {/* 3. Search and Chip Filters */}
-            <View style={styles.filterSection}>
-              {!isLargeScreen && (
-                <View style={styles.menuRow}>
-                  <Pressable onPress={() => setDrawerOpen(true)} style={[styles.menuButton, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]} hitSlop={12}>
-                    <Menu size={20} color={colors.text} />
-                  </Pressable>
-                  <Text style={[styles.pageHeading, { color: colors.text }]}>Task Board</Text>
-                </View>
-              )}
-
-              {/* Glassmorphic Search Bar */}
-              <View style={[styles.searchBar, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: colors.border }]}>
-                <Search size={16} color={colors.textMuted} />
-                <TextInput
-                  style={[styles.searchInput, { color: colors.text }]}
-                  placeholder="Search and explore tasks..."
-                  placeholderTextColor={colors.textDim}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-                {searchQuery.length > 0 && (
-                  <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
-                    <X size={16} color={colors.textMuted} />
-                  </Pressable>
-                )}
-              </View>
-
-              {/* Horizontal filter chips */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
-                {FILTER_CHIPS.map(chip => {
-                  const isSelected = activeFilterId === chip.id;
-                  return (
-                    <Pressable
-                      key={chip.id}
-                      style={[
-                        styles.chip,
-                        { borderColor: colors.border, backgroundColor: 'rgba(255, 255, 255, 0.03)' },
-                        isSelected && { borderColor: colors.accent, backgroundColor: 'rgba(122, 162, 227, 0.15)' }
-                      ]}
-                      onPress={() => setActiveFilterId(chip.id)}
-                    >
-                      <Text style={[styles.chipText, { color: isSelected ? colors.accent : colors.textMuted }]}>
-                        {chip.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* 4. Task List Redesign */}
-            {loading ? (
-              <View style={styles.center}><ActivityIndicator color={colors.accent} size="large" /></View>
-            ) : filtered.length === 0 ? (
-              /* 9. Empty State Redesign */
-              <View style={[styles.empty, { backgroundColor: 'rgba(255, 255, 255, 0.02)', borderColor: colors.border }]}>
-                <View style={styles.emptyIconContainer}>
-                  <Sparkles size={36} color={colors.accent} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>No items matching filters</Text>
-                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-                  {activeFilterId === 'completed' ? 'Great consistency! Start planning new milestones.' : 'Clear up items or click below to build new habits.'}
-                </Text>
-                <PrimaryButton
-                  title="Create Your First Task"
-                  onPress={() => { resetForm(); setModal(true); }}
-                  style={styles.emptyCta}
-                />
-              </View>
-            ) : (
-              <View style={styles.tasksList}>
-                {filtered.map(task => (
+          {/* High Performance Virtualized FlatList */}
+          {loading ? (
+            <View style={styles.center}><ActivityIndicator color={colors.accent} size="large" /></View>
+          ) : (
+            <FlatList
+              data={filtered}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => (
+                <View style={styles.flatListItemWrapper}>
                   <TaskCard
-                    key={task.id}
-                    task={task}
+                    task={item}
                     colors={colors}
                     onComplete={handleComplete}
                     onDelete={handleDelete}
@@ -533,25 +604,28 @@ export default function TasksScreen() {
                     onArchive={archiveTask}
                     onRestore={restoreTask}
                   />
-                ))}
-              </View>
-            )}
-
-            {/* 7. Productivity Dashboard Panel */}
-            <View style={styles.chartsSection}>
-              <ProductivityCharts tasks={tasks} colors={colors} />
-            </View>
-
-            <View style={{ height: insets.bottom + 120 }} />
-          </ScrollView>
+                </View>
+              )}
+              ListHeaderComponent={renderListHeader}
+              ListEmptyComponent={renderListEmpty}
+              ListFooterComponent={renderListFooter}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              initialNumToRender={8}
+              windowSize={5}
+              maxToRenderPerBatch={10}
+              removeClippedSubviews={Platform.OS === 'android'}
+            />
+          )}
         </View>
 
-        {/* 5. Modern Floating Action Button (FAB) */}
+        {/* Floating Action Button (FAB) */}
         <Pressable
           style={({ pressed }) => [
             styles.fab,
             { backgroundColor: colors.accent },
-            pressed && { opacity: 0.9 }
+            pressed && { opacity: 0.9, transform: [{ scale: 0.95 }] }
           ]}
           onPress={() => { resetForm(); setModal(true); }}
         >
@@ -567,7 +641,7 @@ export default function TasksScreen() {
           <Modal transparent visible={drawerOpen} animationType="none" onRequestClose={() => setDrawerOpen(false)}>
             <View style={styles.drawerOverlay}>
               <Pressable style={StyleSheet.absoluteFill} onPress={() => setDrawerOpen(false)} />
-              <Animated.View style={[styles.drawerBody, { backgroundColor: '#000B29', borderColor: colors.border, transform: [{ translateX: drawerAnim }], paddingTop: insets.top + 16 }]}>
+              <Animated.View style={[styles.drawerBody, { backgroundColor: '#000B29', borderColor: 'rgba(255, 255, 255, 0.08)', transform: [{ translateX: drawerAnim }], paddingTop: insets.top + 16 }]}>
                 <View style={styles.drawerHeader}>
                   <Text style={[styles.drawerTitle, { color: colors.text }]}>Navigation</Text>
                   <Pressable onPress={() => setDrawerOpen(false)} hitSlop={8}>
@@ -620,7 +694,7 @@ export default function TasksScreen() {
           </View>
         )}
 
-        {/* 6. Slide-up Modal Sheet (Create/Edit Task) */}
+        {/* Animated Bottom Sheet Modal (Create/Edit Task) */}
         <Modal
           visible={modal}
           transparent
@@ -632,7 +706,7 @@ export default function TasksScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           >
             <Pressable style={StyleSheet.absoluteFill} onPress={() => { setModal(false); resetForm(); }} />
-            <View style={[styles.modalCard, { backgroundColor: '#0A1530', borderColor: colors.border }]}>
+            <View style={[styles.modalCard, { backgroundColor: '#091530', borderColor: 'rgba(255, 255, 255, 0.08)' }]}>
               {/* Drag indicator bar for premium bottom-sheet feeling */}
               <View style={styles.dragIndicator} />
               
@@ -726,7 +800,7 @@ export default function TasksScreen() {
                       key={p}
                       style={[
                         styles.chipItem,
-                        { borderColor: colors.border, backgroundColor: 'rgba(255, 255, 255, 0.03)' },
+                        { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
                         priority === p && { borderColor: PRIORITY_COLORS[p], backgroundColor: PRIORITY_COLORS[p] + '18' }
                       ]}
                       onPress={() => setPriority(p)}
@@ -745,7 +819,7 @@ export default function TasksScreen() {
                       key={d}
                       style={[
                         styles.chipItem,
-                        { borderColor: colors.border, backgroundColor: 'rgba(255, 255, 255, 0.03)' },
+                        { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
                         difficulty === d && { borderColor: colors.accent, backgroundColor: colors.accent + '18' }
                       ]}
                       onPress={() => setDifficulty(d)}
@@ -765,7 +839,7 @@ export default function TasksScreen() {
                         key={c}
                         style={[
                           styles.chipItem,
-                          { borderColor: colors.border, backgroundColor: 'rgba(255, 255, 255, 0.03)' },
+                          { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
                           category === c && { borderColor: colors.accent, backgroundColor: colors.accent + '18' }
                         ]}
                         onPress={() => setCategory(c)}
@@ -830,18 +904,22 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     gap: Spacing.base,
   },
+  flatListItemWrapper: {
+    marginBottom: Spacing.xs,
+  },
 
-  // Header Section
+  listHeaderContainer: {
+    gap: Spacing.base,
+  },
+
+  // Redesigned Glassmorphic Header Section
   headerCard: {
-    borderRadius: Radius.xxl,
+    borderRadius: Radius.xl,
     borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     padding: Spacing.xl,
     gap: Spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 4,
   },
   headerTop: {
     flexDirection: 'row',
@@ -865,7 +943,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontStyle: 'italic',
     lineHeight: 15,
-    marginTop: 2,
+    marginTop: 4,
   },
   headerProgressCol: {
     alignItems: 'center',
@@ -873,6 +951,7 @@ const styles = StyleSheet.create({
   },
   headerRowDivider: {
     borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   headerProfileRow: {
     flexDirection: 'row',
@@ -900,56 +979,84 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  notificationBellContainer: {
-    position: 'relative',
+
+  // Header Quick Actions
+  quickActionsContainer: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
   },
-  bellButton: {
+  quickActionButton: {
     width: 32,
     height: 32,
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bellBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#EF5350',
-  },
 
-  // Carousel Stats Section
-  statsCarouselSection: {
-    marginHorizontal: -Spacing.base,
-  },
-  statsScroll: {
-    paddingHorizontal: Spacing.base,
+  // Premium Grid Task Analytics
+  analyticsSection: {
     gap: Spacing.sm,
   },
-  statsCard: {
-    width: 100,
-    borderRadius: Radius.xl,
-    borderWidth: 1,
-    padding: Spacing.md,
-    gap: 4,
-    alignItems: 'center',
+  analyticsGrid: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
   },
-  statsNum: {
+  analyticsCard: {
+    flex: 1,
+    minWidth: '45%',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    padding: Spacing.md,
+    alignItems: 'center',
+    gap: 4,
+  },
+  overdueAnalyticsCard: {
+    borderColor: 'rgba(239, 83, 80, 0.25)',
+    backgroundColor: 'rgba(239, 83, 80, 0.04)',
+  },
+  analyticsNum: {
     fontSize: 22,
     fontWeight: '800',
   },
-  statsLabel: {
+  analyticsLabel: {
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
-
-  // Gamification card
-  gameCard: {
-    borderRadius: Radius.xl,
+  
+  // Weekly Productivity Card
+  weeklyProductivityCard: {
+    borderRadius: Radius.md,
     borderWidth: 1,
+    borderColor: 'rgba(122, 162, 227, 0.15)',
+    padding: Spacing.md,
+    overflow: 'hidden',
+    position: 'relative',
+    gap: 6,
+  },
+  weeklyProductivityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  weeklyProductivityTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  weeklyProductivityText: {
+    fontSize: 12,
+    lineHeight: 16.5,
+  },
+
+  // Gamification Card
+  gameCard: {
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     padding: Spacing.lg,
     gap: Spacing.md,
   },
@@ -1000,6 +1107,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
+  badgesListRow: {
+    marginTop: Spacing.xs,
+    gap: Spacing.sm,
+  },
+  badgesListTitle: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  badgesScroll: {
+    gap: Spacing.sm,
+    paddingVertical: 2,
+  },
+  badgeIconBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    gap: 6,
+  },
+  badgeIconName: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
 
   // Smart Search and Filters
   filterSection: {
@@ -1026,8 +1160,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingVertical: 10,
-    borderRadius: Radius.xl,
+    borderRadius: Radius.md,
     borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
     gap: Spacing.sm,
   },
   searchInput: {
@@ -1049,24 +1185,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Task list
-  tasksList: {
-    gap: Spacing.xs,
-  },
   center: {
-    paddingVertical: Spacing.xxl,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: Spacing.xxl,
   },
 
-  // Empty state
-  empty: {
-    borderRadius: Radius.xl,
+  // Redesigned Empty State
+  emptyCard: {
+    borderRadius: Radius.md,
     borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
     padding: Spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.md,
+    marginTop: Spacing.base,
   },
   emptyIconContainer: {
     width: 64,
@@ -1091,7 +1227,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  // Charts
+  // Footer & Charts
+  listFooterContainer: {
+    marginTop: Spacing.lg,
+    gap: Spacing.base,
+  },
   chartsSection: {
     marginTop: Spacing.sm,
   },
@@ -1157,8 +1297,8 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxHeight: '85%',
-    borderTopLeftRadius: Radius.xxl,
-    borderTopRightRadius: Radius.xxl,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
     borderWidth: 1,
     borderBottomWidth: 0,
     padding: Spacing.xl,
@@ -1228,4 +1368,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

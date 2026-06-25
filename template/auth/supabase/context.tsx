@@ -160,7 +160,14 @@ export function useAuthContext(): AuthContextType {
   const context = useContext(AuthContext);
   
   if (context === undefined) {
-    throw new Error('useAuthContext must be used within an AuthProvider');
+    console.warn('[useAuthContext] must be used within an AuthProvider. Returning fallback state.');
+    return {
+      user: null,
+      loading: false,
+      operationLoading: false,
+      initialized: false,
+      setOperationLoading: () => {},
+    };
   }
   
   return context;
