@@ -24,8 +24,8 @@ export default function NotesSection({ parentType, parentId }: NotesSectionProps
   const { colors: Colors } = useAppTheme();
 
   const relevantNotes = useMemo(() => {
-    return filterNotes({ parentType, parentId });
-  }, [notes, parentType, parentId, filterNotes]);
+    return filterNotes({ parentType });
+  }, [notes, parentType, filterNotes]);
 
   const openEditor = (noteId: string | null = null) => {
     setEditingNoteId(noteId);

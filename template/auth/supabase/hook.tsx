@@ -49,6 +49,9 @@ export function useAuth(): AuthContextType {
       resendOTP: async (): Promise<SendOTPResult> => ({
         error: 'Auth function not enabled, please check configuration'
       }),
+      updateProfile: async (): Promise<{ error?: string }> => ({
+        error: 'Auth function not enabled, please check configuration'
+      }),
     };
   }
 
@@ -165,6 +168,17 @@ export function useAuth(): AuthContextType {
     }
   };
 
+  const updateProfile = async (metadata: Record<string, any>): Promise<{ error?: string }> => {
+    context.setOperationLoading(true);
+    try {
+      return await authService.updateProfile(metadata);
+    } catch (error) {
+      return { error: 'Failed to update profile' };
+    } finally {
+      context.setOperationLoading(false);
+    }
+  };
+
   const signInWithGoogle = async (): Promise<GoogleSignInResult> => {
     context.setOperationLoading(true);
     try {
@@ -195,5 +209,6 @@ export function useAuth(): AuthContextType {
     refreshSession,
     resetPassword,
     resendOTP,
+    updateProfile,
   };
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/template';
+import { useNotifications } from '@/hooks/useNotifications';
 import { habitsService, Habit } from '@/services/habitsService';
 
 interface HabitsContextType {
@@ -17,6 +18,7 @@ export const HabitsContext = createContext<HabitsContextType | undefined>(undefi
 
 export function HabitsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +37,10 @@ export function HabitsProvider({ children }: { children: ReactNode }) {
   const addHabit = async (name: string, description: string | undefined, frequency: string) => {
     if (!user) return;
     const { data } = await habitsService.create({ user_id: user.id, name, description, frequency });
-    if (data) setHabits(prev => [{ ...data, habit_logs: [] }, ...prev]);
+    if (data) {
+      setHabits(prev => [{ ...data, habit_logs: [] }, ...prev]);
+      await addNotification('Habit Created', `New habit "${name}" has been added.`);
+    }
   };
 
   const updateHabit = async (id: string, updates: Partial<Habit>) => {
@@ -52,6 +57,7 @@ export function HabitsProvider({ children }: { children: ReactNode }) {
 
   const logHabit = async (habitId: string, dateStr: string) => {
     if (!user) return;
+    const habit = habits.find(h => h.id === habitId);
     const { log, error } = await habitsService.log(habitId, user.id, dateStr);
     if (log) {
       setHabits(prev => prev.map(h => {
@@ -59,15 +65,17 @@ export function HabitsProvider({ children }: { children: ReactNode }) {
           const logs = h.habit_logs ?? [];
           return {
             ...h,
-            streak: h.streak + 1, // simplified optimistic, service updates the real database value
+            streak: h.streak + 1,
             last_completed: dateStr,
             habit_logs: [...logs, log],
           };
         }
         return h;
       }));
-      // Re-fetch to ensure the computed streak is precisely correct
       await load();
+      if (habit && habit.streak > 0 && (habit.streak + 1) % 7 === 0) {
+        await addNotification('Habit Streak', `${habit.streak + 1} day streak for "${habit.name}"! Keep it up!`);
+      }
     }
   };
 

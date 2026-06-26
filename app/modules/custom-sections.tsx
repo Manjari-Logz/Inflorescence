@@ -39,22 +39,38 @@ export default function CustomSectionsScreen() {
   const handleAddSection = async () => {
     if (!sectionName.trim()) return;
     setSaving(true);
-    await addSection(sectionName.trim(), sectionColor, 'folder');
-    setSaving(false); setSectionModal(false); setSectionName('');
+    try {
+      await addSection(sectionName.trim(), sectionColor, 'folder');
+      setSectionModal(false);
+      setSectionName('');
+    } catch (error) {
+      showAlert('Error', 'Failed to create section. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAddItem = async () => {
     if (!itemTitle.trim() || !activeSectionId) return;
     setSaving(true);
-    await addItem(activeSectionId, {
-      title: itemTitle.trim(),
-      requirements: requirements.trim() || undefined,
-      deadline: deadline.trim() || undefined,
-      attachment_url: attachmentUrl || undefined,
-      completed: false,
-    });
-    setSaving(false); setItemModal(false);
-    setItemTitle(''); setRequirements(''); setDeadline(''); setAttachmentUrl('');
+    try {
+      await addItem(activeSectionId, {
+        title: itemTitle.trim(),
+        requirements: requirements.trim() || undefined,
+        deadline: deadline.trim() || undefined,
+        attachment_url: attachmentUrl || undefined,
+        completed: false,
+      });
+      setItemModal(false);
+      setItemTitle('');
+      setRequirements('');
+      setDeadline('');
+      setAttachmentUrl('');
+    } catch (error) {
+      showAlert('Error', 'Failed to add item. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAttachment = async () => {

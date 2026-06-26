@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/template';
+import { useNotifications } from '@/hooks/useNotifications';
 import { goalsService, ShortGoal, LongGoal, Dream } from '@/services/goalsService';
 
 interface GoalsContextType {
@@ -22,6 +23,7 @@ export const GoalsContext = createContext<GoalsContextType | undefined>(undefine
 
 export function GoalsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const [shortGoals, setShortGoals] = useState<ShortGoal[]>([]);
   const [longGoals, setLongGoals] = useState<LongGoal[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
@@ -48,12 +50,21 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   const addShortGoal = async (input: Omit<ShortGoal, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
     const { data } = await goalsService.createShortGoal({ ...input, user_id: user.id });
-    if (data) setShortGoals(prev => [data, ...prev]);
+    if (data) {
+      setShortGoals(prev => [data, ...prev]);
+      await addNotification('Goal Created', `New goal "${input.title}" has been set.`);
+    }
   };
 
   const updateShortGoal = async (id: string, updates: Partial<ShortGoal>) => {
     const { error } = await goalsService.updateShortGoal(id, updates);
-    if (!error) setShortGoals(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+    if (!error) {
+      setShortGoals(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+      if (updates.completed === true) {
+        const goal = shortGoals.find(g => g.id === id);
+        if (goal) await addNotification('Goal Achieved', `Congratulations! You achieved "${goal.title}".`);
+      }
+    }
   };
 
   const deleteShortGoal = async (id: string) => {
@@ -64,7 +75,10 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   const addLongGoal = async (input: Omit<LongGoal, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
     const { data } = await goalsService.createLongGoal({ ...input, user_id: user.id });
-    if (data) setLongGoals(prev => [data, ...prev]);
+    if (data) {
+      setLongGoals(prev => [data, ...prev]);
+      await addNotification('Long-term Goal Created', `New vision "${input.vision}" has been set.`);
+    }
   };
 
   const updateLongGoal = async (id: string, updates: Partial<LongGoal>) => {

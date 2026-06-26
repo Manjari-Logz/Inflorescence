@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, Pressable, StatusBar,
+  View, Text, ScrollView, StyleSheet, Pressable, StatusBar, Modal,
+  KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -8,6 +9,8 @@ import {
   ChevronRight, BookOpen, BarChart2, Trophy, Settings,
   GraduationCap, Shield, Bell, Download, User, Wallet,
   Dumbbell, Headphones, Briefcase, Layers, PenLine, LayoutGrid,
+  Edit2, X, Camera, Mail, Phone, MapPin, Calendar, GraduationCap as GradCap,
+  Linkedin, Github, Globe, Save,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth, useAlert } from '@/template';
@@ -19,6 +22,8 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius, MODULE_ROUTES, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { AppInput } from '@/components/ui/AppInput';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { BADGE_MILESTONES } from '@/services/badgesService';
 
 function getLevelInfo(completedTasks: number) {
@@ -47,12 +52,30 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, mode, toggleTheme } = useAppTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
   const { showAlert } = useAlert();
   const { tasks } = useTasks();
   const { badges } = useBadges();
   const { shortGoals, longGoals, dreams } = useGoals();
   const { hackathons } = useEvents();
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    full_name: user?.user_metadata?.full_name || '',
+    username: user?.username || '',
+    bio: user?.user_metadata?.bio || '',
+    phone: user?.user_metadata?.phone || '',
+    location: user?.user_metadata?.location || '',
+    college: user?.user_metadata?.college || '',
+    department: user?.user_metadata?.department || '',
+    year_of_study: user?.user_metadata?.year_of_study || '',
+    skills: user?.user_metadata?.skills || '',
+    interests: user?.user_metadata?.interests || '',
+    github: user?.user_metadata?.github || '',
+    linkedin: user?.user_metadata?.linkedin || '',
+    portfolio: user?.user_metadata?.portfolio || '',
+  });
 
   const completedTasks = tasks.filter(t => t.completed).length;
   const totalTasks = tasks.length;
@@ -76,6 +99,23 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      const { error } = await updateProfile(editForm);
+      if (error) {
+        showAlert('Error', error);
+      } else {
+        setEditModalVisible(false);
+        showAlert('Success', 'Profile updated successfully');
+      }
+    } catch (error) {
+      showAlert('Error', 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const statsData = [
     { label: 'Tasks Done', value: completedTasks, color: Colors.success },
     { label: 'Total Tasks', value: totalTasks, color: colors.accent },
@@ -86,6 +126,7 @@ export default function ProfileScreen() {
   ];
 
   const settingsItems = [
+    { label: 'Edit Profile', icon: Edit2, onPress: () => setEditModalVisible(true), color: colors.accent },
     { label: mode === 'dark' ? 'Light Mode' : 'Dark Mode', icon: mode === 'dark' ? Sun : Moon, onPress: toggleTheme, color: colors.accent },
     { label: 'Money Vault', icon: Wallet, onPress: () => router.push('/modules/money-vault'), color: '#F59E0B' },
     { label: 'Badge Collection', icon: Trophy, onPress: () => router.push('/modules/badges'), color: Colors.warning },
@@ -194,6 +235,138 @@ export default function ProfileScreen() {
 
         <Text style={[styles.version, { color: colors.textDim }]}>Inflorescence v1.0 · Personal Growth OS</Text>
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Profile</Text>
+              <Pressable onPress={() => setEditModalVisible(false)}>
+                <X size={24} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+              <AppInput
+                label="Full Name"
+                placeholder="Enter your full name"
+                value={editForm.full_name}
+                onChangeText={(text) => setEditForm({ ...editForm, full_name: text })}
+              />
+
+              <AppInput
+                label="Username"
+                placeholder="Enter username"
+                value={editForm.username}
+                onChangeText={(text) => setEditForm({ ...editForm, username: text })}
+              />
+
+              <AppInput
+                label="Bio"
+                placeholder="Tell us about yourself"
+                value={editForm.bio}
+                onChangeText={(text) => setEditForm({ ...editForm, bio: text })}
+                multiline
+              />
+
+              <AppInput
+                label="Phone"
+                placeholder="+1 234 567 8900"
+                value={editForm.phone}
+                onChangeText={(text) => setEditForm({ ...editForm, phone: text })}
+                keyboardType="phone-pad"
+              />
+
+              <AppInput
+                label="Location"
+                placeholder="City, Country"
+                value={editForm.location}
+                onChangeText={(text) => setEditForm({ ...editForm, location: text })}
+              />
+
+              <AppInput
+                label="College/University"
+                placeholder="Your institution"
+                value={editForm.college}
+                onChangeText={(text) => setEditForm({ ...editForm, college: text })}
+              />
+
+              <AppInput
+                label="Department"
+                placeholder="Your department"
+                value={editForm.department}
+                onChangeText={(text) => setEditForm({ ...editForm, department: text })}
+              />
+
+              <AppInput
+                label="Year of Study"
+                placeholder="e.g., 3rd Year"
+                value={editForm.year_of_study}
+                onChangeText={(text) => setEditForm({ ...editForm, year_of_study: text })}
+              />
+
+              <AppInput
+                label="Skills"
+                placeholder="e.g., React, Python, Design"
+                value={editForm.skills}
+                onChangeText={(text) => setEditForm({ ...editForm, skills: text })}
+              />
+
+              <AppInput
+                label="Interests"
+                placeholder="e.g., AI, Web Dev, Gaming"
+                value={editForm.interests}
+                onChangeText={(text) => setEditForm({ ...editForm, interests: text })}
+              />
+
+              <AppInput
+                label="GitHub"
+                placeholder="github.com/username"
+                value={editForm.github}
+                onChangeText={(text) => setEditForm({ ...editForm, github: text })}
+              />
+
+              <AppInput
+                label="LinkedIn"
+                placeholder="linkedin.com/in/username"
+                value={editForm.linkedin}
+                onChangeText={(text) => setEditForm({ ...editForm, linkedin: text })}
+              />
+
+              <AppInput
+                label="Portfolio"
+                placeholder="yourportfolio.com"
+                value={editForm.portfolio}
+                onChangeText={(text) => setEditForm({ ...editForm, portfolio: text })}
+              />
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.modalButton, styles.cancelButton, { borderColor: colors.border }]}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancel</Text>
+              </Pressable>
+              <PrimaryButton
+                title={saving ? 'Saving...' : 'Save'}
+                onPress={handleSaveProfile}
+                disabled={saving}
+                style={styles.saveButton}
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -239,4 +412,52 @@ const styles = StyleSheet.create({
   settingsLabel: { flex: 1, fontSize: Typography.sizes.base, fontWeight: Typography.weights.medium },
 
   version: { fontSize: Typography.sizes.xs, textAlign: 'center', marginBottom: Spacing.base },
+
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    borderTopLeftRadius: Radius.lg,
+    borderTopRightRadius: Radius.lg,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xl + 20,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  modalTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+  },
+  modalScroll: {
+    maxHeight: '70%',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  cancelButton: {
+    backgroundColor: 'transparent',
+  },
+  modalButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+  },
+  saveButton: {
+    flex: 1,
+  },
 });

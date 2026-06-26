@@ -13,6 +13,7 @@ export function useNotifications() {
       markRead: async () => {},
       markAllRead: async () => {},
       deleteNotification: async () => {},
+      clearAll: async () => {},
       refresh: async () => {},
     };
   }

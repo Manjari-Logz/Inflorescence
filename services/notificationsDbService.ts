@@ -65,4 +65,13 @@ export const notificationsDbService = {
       .eq('id', id);
     return { error: error?.message ?? null };
   },
+
+  async clearAll(userId: string) {
+    const client = getSupabaseClient();
+    const { error } = await client
+      .from('notifications')
+      .delete()
+      .eq('user_id', userId);
+    return { error: error?.message ?? null };
+  },
 };

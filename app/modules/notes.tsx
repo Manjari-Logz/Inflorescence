@@ -114,7 +114,7 @@ export default function NotesScreen() {
             contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 80 }]}
             showsVerticalScrollIndicator={false}
           >
-            {notes.map(note => (
+            {notes.map((note: any) => (
               <GlassCard
                 key={note.id}
                 style={[styles.noteCard, { backgroundColor: colors.surface, borderColor: colors.border }]}

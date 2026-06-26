@@ -10,6 +10,7 @@ interface NotificationsContextType {
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  clearAll: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -54,10 +55,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     await notificationsDbService.remove(id);
   };
 
+  const clearAll = async () => {
+    if (!user) return;
+    setNotifications([]);
+    await notificationsDbService.clearAll(user.id);
+  };
+
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <NotificationsContext.Provider value={{ notifications, unreadCount, loading, addNotification, markRead, markAllRead, deleteNotification, refresh: load }}>
+    <NotificationsContext.Provider value={{ notifications, unreadCount, loading, addNotification, markRead, markAllRead, deleteNotification, clearAll, refresh: load }}>
       {children}
     </NotificationsContext.Provider>
   );

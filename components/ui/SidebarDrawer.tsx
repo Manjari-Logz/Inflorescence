@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, Pressable, Modal, Animated, Dimensions, ScrollView, TextInput, Keyboard
 } from 'react-native';
@@ -21,12 +21,14 @@ import {
   User,
   Wallet,
   History,
+  Folder,
 } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius } from '@/constants/theme';
 import { useAuth } from '@/template';
+import { useCustomSections } from '@/hooks/useModules';
 
 const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.82;
@@ -67,6 +69,7 @@ export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
+  const { sections } = useCustomSections();
   const [search, setSearch] = useState('');
   
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -115,7 +118,27 @@ export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
     }, 200);
   };
 
-  const filteredItems = MENU_ITEMS.filter(item =>
+  // Build dynamic menu items including custom sections
+  const allMenuItems = useMemo(() => {
+    const customSectionItems: MenuItem[] = sections.map(section => ({
+      label: section.name,
+      icon: Folder,
+      route: `/modules/custom-sections/${section.id}`,
+    }));
+
+    // Insert custom sections before "Custom Sections" management item
+    const customSectionsIndex = MENU_ITEMS.findIndex(item => item.label === 'Custom Sections');
+    if (customSectionsIndex >= 0) {
+      return [
+        ...MENU_ITEMS.slice(0, customSectionsIndex),
+        ...customSectionItems,
+        ...MENU_ITEMS.slice(customSectionsIndex)
+      ];
+    }
+    return [...MENU_ITEMS, ...customSectionItems];
+  }, [sections]);
+
+  const filteredItems = allMenuItems.filter(item =>
     item.label.toLowerCase().includes(search.toLowerCase())
   );
 

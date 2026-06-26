@@ -86,6 +86,7 @@ export default function TabLayout() {
       />
       {/* Hidden tabs accessible via navigation */}
       <Tabs.Screen name="events" options={{ href: null }} />
+      <Tabs.Screen name="study" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -8,6 +8,7 @@ export interface AuthUser {
   created_at?: string;
   updated_at?: string;
   email_confirmed_at?: string;
+  user_metadata?: Record<string, any>;
 }
 
 // Unified base result format - only use error
@@ -58,6 +59,7 @@ export interface AuthContextType {
   refreshSession: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   resendOTP: (email: string) => Promise<SendOTPResult>;
+  updateProfile: (metadata: Record<string, any>) => Promise<{ error?: string }>;
 }
 
 export interface AuthConfig {

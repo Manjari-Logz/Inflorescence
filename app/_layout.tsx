@@ -54,9 +54,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AlertProvider>
         <AuthProvider>
-          <TasksProvider>
-            <ThemeProvider>
-              <NotificationsProvider>
+          <ThemeProvider>
+            <NotificationsProvider>
+              <TasksProvider>
                 <HabitsProvider>
                   <NotesProvider>
                     <DrawerProvider>
@@ -99,9 +99,9 @@ export default function RootLayout() {
                     </DrawerProvider>
                   </NotesProvider>
                 </HabitsProvider>
-              </NotificationsProvider>
-            </ThemeProvider>
-          </TasksProvider>
+              </TasksProvider>
+            </NotificationsProvider>
+          </ThemeProvider>
         </AuthProvider>
       </AlertProvider>
     </SafeAreaProvider>

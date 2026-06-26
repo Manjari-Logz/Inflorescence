@@ -145,7 +145,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     });
 
     // 4. Search Notes
-    notes.forEach(n => {
+    notes.forEach((n: any) => {
       if (n.title.toLowerCase().includes(q) || (n.content?.toLowerCase() ?? '').includes(q)) {
         list.push({
           id: n.id,

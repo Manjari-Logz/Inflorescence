@@ -63,6 +63,7 @@ export function useCustomSections() {
       sections: [],
       loading: false,
       addSection: async () => {},
+      updateSection: async () => {},
       removeSection: async () => {},
       addItem: async () => {},
       updateItem: async () => {},

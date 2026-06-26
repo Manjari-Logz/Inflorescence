@@ -9,7 +9,7 @@ import {
   Bell, Search, CheckCircle2, Clock, Flame, Star,
   BookOpen, Activity, Trophy, Target, ChevronRight,
   Timer, TrendingUp, Calendar, Sun, Sunset, Moon,
-  X, Wallet, Menu, FileText, Check, Trash2, CheckCircle, CheckSquare,
+  X, Wallet, Menu, FileText, Check, Trash2, CheckCircle, CheckSquare, CheckCheck,
 } from 'lucide-react-native';
 import { useAuth, useAlert } from '@/template';
 import { useTasks } from '@/hooks/useTasks';
@@ -57,7 +57,7 @@ export default function HomeScreen() {
   const { shortGoals, addShortGoal } = useGoals();
   const { addHabit } = useHabits();
   const { addNote } = useNotes();
-  const { notifications, unreadCount, markRead, markAllRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, markRead, markAllRead, deleteNotification, clearAll, refresh } = useNotifications();
   const { isSearchVisible, openSearch, closeSearch, searchQuery, setSearchQuery, results, recentSearches, addRecentSearch, clearRecentSearches } = useSearch();
   const { isDrawerOpen, openDrawer, closeDrawer } = useDrawer();
   const { showAlert } = useAlert();
@@ -466,9 +466,18 @@ export default function HomeScreen() {
 
               <View style={styles.notifActionsRow}>
                 <Pressable onPress={markAllRead} style={styles.notifActionBtn}>
-                  <CheckCheckIcon color={colors.accent} />
+                  <CheckCheck size={14} color={colors.accent} strokeWidth={2.5} />
                   <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600', marginLeft: 4 }}>Mark all as read</Text>
                 </Pressable>
+                {notifications.length > 0 && (
+                  <Pressable onPress={() => showAlert('Clear All', 'Delete all notifications?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Clear', style: 'destructive', onPress: clearAll },
+                  ])} style={styles.notifActionBtn}>
+                    <Trash2 size={14} color={colors.error} strokeWidth={2.5} />
+                    <Text style={{ color: colors.error, fontSize: 13, fontWeight: '600', marginLeft: 4 }}>Clear all</Text>
+                  </Pressable>
+                )}
               </View>
 
               <ScrollView contentContainerStyle={styles.notifListScroll} showsVerticalScrollIndicator={false}>
@@ -606,16 +615,6 @@ export default function HomeScreen() {
         </Modal>
       </View>
     </WatercolorBackground>
-  );
-}
-
-// Simple helper icon component
-function CheckCheckIcon({ color }: { color: string }) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <Check size={14} color={color} strokeWidth={2.5} />
-      <Check size={14} color={color} strokeWidth={2.5} style={{ marginLeft: -8 }} />
-    </View>
   );
 }
 

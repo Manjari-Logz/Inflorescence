@@ -4,7 +4,7 @@ import { notesService, Note } from '@/services/notesService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
-interface NotesContextType {
+export interface NotesContextType {
   notes: Note[];
   loading: boolean;
   addNote: (title: string, content?: string, meta?: Partial<Pick<Note, 'parent_type' | 'parent_id'>>) => Promise<Note | null>;
@@ -12,20 +12,9 @@ interface NotesContextType {
   deleteNote: (id: string) => Promise<void>;
   togglePin: (id: string) => Promise<void>;
   addTag: (id: string, tag: string) => Promise<void>;
-  removeTag: (id: string, tag: string) => Promise<void>;
-  changeColor: (id: string, color: string) => Promise<void>;
-  attachFile: (id: string, file: { uri: string; name: string }) => Promise<void>;
-  setReminder: (id: string, datetime: string) => Promise<void>;
-  setChecklist: (id: string, items: { text: string; completed: boolean }[]) => Promise<void>;
-  searchNotes: (query: string) => Note[];
   filterNotes: (criteria: Partial<{
     pinned: boolean;
-    color: string;
-    tag: string;
     parentType: string;
-    hasAttachment: boolean;
-    hasReminder: boolean;
-    hasChecklist: boolean;
   }>) => Note[];
   processQueue: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -68,6 +57,17 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     if (!note) return;
     const newTags = Array.isArray(note.tags) ? [...note.tags, tag] : [tag];
     await updateNote(id, { tags: newTags });
+  };
+
+  const filterNotes = (criteria: Partial<{
+    pinned: boolean;
+    parentType: string;
+  }>) => {
+    return notes.filter(n => {
+      if (criteria.pinned !== undefined && n.pinned !== criteria.pinned) return false;
+      if (criteria.parentType !== undefined && n.parent_type !== criteria.parentType) return false;
+      return true;
+    });
   };
 
   // load persisted queue on mount
@@ -169,12 +169,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     deleteNote,
     togglePin,
     addTag,
-    removeTag,
-    changeColor,
-    attachFile,
-    setReminder,
-    setChecklist,
-    searchNotes,
     filterNotes,
     processQueue,
     refresh: load,

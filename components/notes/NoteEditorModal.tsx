@@ -23,7 +23,7 @@ export default function NoteEditorModal({ noteId, parentType, parentId, onSave, 
 
   useEffect(() => {
     if (noteId) {
-      const existing = notes.find(n => n.id === noteId);
+      const existing = notes.find((n: any) => n.id === noteId);
       if (existing) {
         setTitle(existing.title || '');
         setContent(existing.content || '');

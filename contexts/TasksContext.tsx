@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/template';
+import { useNotifications } from '@/hooks/useNotifications';
 import { tasksService, Task } from '@/services/tasksService';
 import { badgesService } from '@/services/badgesService';
 import { historyService, HistoryRecord } from '@/services/historyService';
@@ -37,6 +38,7 @@ export const TasksContext = createContext<TasksContextType | undefined>(undefine
 
 export function TasksProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -79,6 +81,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     const { data, error } = await tasksService.create({ ...input, user_id: user.id });
     if (data) {
       setTasks(prev => prev.map(t => t.id === tempId ? data : t));
+      await addNotification('Task Created', `You created a new task: ${input.title}`);
     } else {
       setTasks(prev => prev.filter(t => t.id !== tempId));
     }
@@ -141,6 +144,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
       } else if (historyData) {
         setHistory(prev => [historyData, ...prev]);
       }
+      await addNotification('Task Completed', `Great job! You completed: ${task.title}`);
     }
 
     const completedCount = tasks.filter(t => t.completed).length + 1;
@@ -168,7 +172,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
 
       // 2. Set task as incomplete
       setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: false, completed_at: undefined, archived: false } : t));
-      const { error } = await tasksService.update(id, { completed: false, completed_at: null, archived: false });
+      const { error } = await tasksService.update(id, { completed: false, completed_at: undefined, archived: false });
       if (error) await load();
     } else {
       // Check if it's in history but missing from local task list (e.g. deleted task)
@@ -189,6 +193,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
           priority: histRecord.priority || 'Medium',
           notes: histRecord.notes || '',
           estimated_time: histRecord.estimated_time || 0,
+          progress: 0,
           completed: false,
           archived: false,
         };
