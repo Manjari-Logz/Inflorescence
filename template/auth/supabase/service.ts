@@ -571,29 +571,6 @@ export class AuthService {
     }
   }
 
-  async updateProfile(metadata: Record<string, any>): Promise<{ error?: string }> {
-    try {
-      const { data, error } = await this.supabase.auth.updateUser({
-        data: metadata
-      });
-
-      if (error) {
-        if (error.message.includes('timeout')) {
-          return { error: 'Profile update timeout, please retry' };
-        }
-        return { error: error.message };
-      }
-
-      return { error: null };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown profile update error';
-      if (errorMessage.includes('timeout')) {
-        return { error: 'Profile update timeout, please retry' };
-      }
-      return { error: `Profile update failed: ${errorMessage}` };
-    }
-  }
-
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
     try {
       const { data: { subscription } } = this.supabase.auth.onAuthStateChange(
