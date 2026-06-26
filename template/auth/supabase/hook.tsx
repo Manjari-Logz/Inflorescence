@@ -43,15 +43,6 @@ export function useAuth(): AuthContextType {
       refreshSession: async () => {
         console.warn('Auth function not enabled');
       },
-      resetPassword: async (): Promise<{ error?: string }> => ({
-        error: 'Auth function not enabled, please check configuration'
-      }),
-      resendOTP: async (): Promise<SendOTPResult> => ({
-        error: 'Auth function not enabled, please check configuration'
-      }),
-      updateProfile: async (): Promise<{ error?: string }> => ({
-        error: 'Auth function not enabled, please check configuration'
-      }),
     };
   }
 
@@ -146,39 +137,6 @@ export function useAuth(): AuthContextType {
     }
   };
 
-  const resetPassword = async (email: string) => {
-    context.setOperationLoading(true);
-    try {
-      return await authService.resetPassword(email);
-    } catch (error) {
-      return { error: 'Failed to send reset email' };
-    } finally {
-      context.setOperationLoading(false);
-    }
-  };
-
-  const resendOTP = async (email: string): Promise<SendOTPResult> => {
-    context.setOperationLoading(true);
-    try {
-      return await authService.resendOTP(email);
-    } catch (error) {
-      return { error: 'Failed to resend verification code' };
-    } finally {
-      context.setOperationLoading(false);
-    }
-  };
-
-  const updateProfile = async (metadata: Record<string, any>): Promise<{ error?: string }> => {
-    context.setOperationLoading(true);
-    try {
-      return await authService.updateProfile(metadata);
-    } catch (error) {
-      return { error: 'Failed to update profile' };
-    } finally {
-      context.setOperationLoading(false);
-    }
-  };
-
   const signInWithGoogle = async (): Promise<GoogleSignInResult> => {
     context.setOperationLoading(true);
     try {
@@ -207,8 +165,5 @@ export function useAuth(): AuthContextType {
     signInWithGoogle,
     logout,
     refreshSession,
-    resetPassword,
-    resendOTP,
-    updateProfile,
   };
 }

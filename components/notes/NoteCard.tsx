@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Note } from '@/services/notesService';
 import { MoreHorizontal, Pin, Calendar, Tag } from 'lucide-react-native';
+import { useAlert } from '@/template';
 import { Colors, Typography, Radius, Shadows, Spacing } from '@/constants/theme';
 
 interface NoteCardProps {
@@ -20,12 +21,17 @@ interface NoteCardProps {
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onEdit, onDelete, onTogglePin }) => {
+  const { showAlert } = useAlert();
+
   const handleLongPress = useCallback(() => {
-    // Simplified: just call edit if available
-    if (onEdit) {
-      onEdit();
-    }
-  }, [onEdit]);
+    const buttons = [
+      onTogglePin ? { text: note.pinned ? 'Unpin' : 'Pin', onPress: () => onTogglePin() } : null,
+      onEdit ? { text: 'Edit', onPress: () => onEdit() } : null,
+      onDelete ? { text: 'Delete', style: 'destructive' as const, onPress: () => onDelete() } : null,
+      { text: 'Cancel', style: 'cancel' as const },
+    ].filter(Boolean) as any[];
+    showAlert('Note Options', undefined, buttons);
+  }, [note.pinned, onTogglePin, onEdit, onDelete, showAlert]);
 
   const title = note.title?.trim() ? note.title : 'Untitled Note';
   const contentPreview = note.content?.trim()
@@ -133,7 +139,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.xs,
   },
   title: {
-    fontWeight: Typography.weights.semibold,
+    ...Typography.weights.semibold,
     fontSize: Typography.sizes.md,
   },
   menuButton: {
