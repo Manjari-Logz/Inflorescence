@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BookOpen, Plus, Edit2, Trash2, X, BookMarked, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { BookOpen, Plus, Edit2, Trash2, X, BookMarked } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useAlert } from '@/hooks/useAlert';
 import { useBooks } from '@/hooks/useModules';

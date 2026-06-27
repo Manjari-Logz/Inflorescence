@@ -1,6 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface ProgressRingProps {
   progress: number; // 0–100
@@ -19,10 +21,24 @@ export function ProgressRing({
   inactiveColor = 'rgba(255, 255, 255, 0.06)',
   textColor = '#FFFFFF',
 }: ProgressRingProps) {
-  const clampedProgress = Math.min(100, Math.max(0, progress));
+  const clampedProgress = isNaN(progress) ? 0 : Math.min(100, Math.max(0, progress));
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(animatedValue, {
+      toValue: clampedProgress,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  }, [clampedProgress, animatedValue]);
+
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (clampedProgress / 100) * circumference;
+  const strokeDashoffset = animatedValue.interpolate({
+    inputRange: [0, 100],
+    outputRange: [circumference, 0],
+  });
   const center = size / 2;
 
   return (
@@ -38,7 +54,7 @@ export function ProgressRing({
           fill="none"
         />
         {/* Progress arc */}
-        <Circle
+        <AnimatedCircle
           cx={center}
           cy={center}
           r={radius}
@@ -53,7 +69,7 @@ export function ProgressRing({
         />
       </Svg>
       <Text style={{ color: textColor, fontSize: size * 0.22, fontWeight: '700' }}>
-        {clampedProgress}%
+        {Math.round(clampedProgress)}%
       </Text>
     </View>
   );

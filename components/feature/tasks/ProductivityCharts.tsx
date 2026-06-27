@@ -44,7 +44,7 @@ export function ProductivityCharts({ tasks, colors }: ProductivityChartsProps) {
       });
     });
     Animated.parallel(animations).start();
-  }, [tasks, maxCount]);
+  }, [tasks, maxCount, animValues, weeklyData]);
 
   // 2. Calculate Category Distribution (top 4 categories)
   const categoryCounts = tasks.reduce((acc: Record<string, number>, task) => {

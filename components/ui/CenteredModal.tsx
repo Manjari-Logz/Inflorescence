@@ -46,7 +46,7 @@ export function CenteredModal({ visible, onClose, children }: CenteredModalProps
         }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, fadeAnim, scaleAnim]);
 
   return (
     <Modal

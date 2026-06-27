@@ -3,8 +3,8 @@ import { View, Pressable, StyleSheet, Modal, Text, Platform } from 'react-native
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Home, CheckSquare, TrendingUp, Compass, User,
-  Plus, X, BookOpen, Dumbbell, Trophy, Layers, ListTodo, Wallet, Target, Flame, Timer, Menu,
+  Home, CheckSquare, TrendingUp, User,
+  Plus, X, BookOpen, Dumbbell, Trophy, Layers, ListTodo, Wallet, Flame, Timer,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Spacing, Radius, Typography } from '@/constants/theme';
@@ -19,7 +19,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const router = useRouter();
-  const { isDrawerOpen, openDrawer, closeDrawer } = useDrawer();
+  const { isDrawerOpen, closeDrawer } = useDrawer();
   const [fabOpen, setFabOpen] = useState(false);
 
   const tabBarHeight = Platform.select({ ios: insets.bottom + 56, android: insets.bottom + 56, default: 64 });

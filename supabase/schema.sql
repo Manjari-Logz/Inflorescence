@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS custom_sections (
   name TEXT NOT NULL,
   color TEXT DEFAULT '#29B6F6',
   icon TEXT DEFAULT 'folder',
+  order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, TextInput, Alert,
+  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Plus, Wallet, TrendingDown, Target, PiggyBank, Trash2,
+  Plus, Wallet, Trash2,
   X, DollarSign, ShoppingBag, Utensils, Car, BookOpen,
-  Zap, Heart, Music, MoreHorizontal, Settings, ChevronRight,
+  Zap, Heart, Music, MoreHorizontal, Settings,
 } from 'lucide-react-native';
 import { useAlert } from '@/hooks/useAlert';
 import { useMoneyVault } from '@/hooks/useModules';

@@ -26,7 +26,7 @@ import {
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/useAppTheme';
-import { Typography, Spacing, Radius } from '@/constants/theme';
+import { Spacing, Radius } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomSections } from '@/hooks/useModules';
 
@@ -65,7 +65,7 @@ const MENU_ITEMS: MenuItem[] = [
 
 export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
   const insets = useSafeAreaInsets();
-  const { colors, mode } = useAppTheme();
+  const { colors } = useAppTheme();
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
@@ -104,7 +104,7 @@ export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
         })
       ]).start();
     }
-  }, [visible]);
+  }, [visible, fadeAnim, slideAnim]);
 
   const handleNavigate = (route: string) => {
     Keyboard.dismiss();

@@ -44,7 +44,7 @@ export default function CustomSectionsScreen() {
       await addSection(sectionName.trim(), sectionColor, 'folder');
       setSectionModal(false);
       setSectionName('');
-    } catch (error) {
+    } catch {
       showAlert('Error', 'Failed to create section. Please try again.');
     } finally {
       setSaving(false);
@@ -67,7 +67,7 @@ export default function CustomSectionsScreen() {
       setRequirements('');
       setDeadline('');
       setAttachmentUrl('');
-    } catch (error) {
+    } catch {
       showAlert('Error', 'Failed to add item. Please try again.');
     } finally {
       setSaving(false);

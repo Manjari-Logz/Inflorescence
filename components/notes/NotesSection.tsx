@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Modal } from 'react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useNotes } from '@/hooks/useNotes';
-import { Typography, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Typography, Radius, Shadows } from '@/constants/theme';
 import NoteCard from './NoteCard';
 import NoteEditorModal from './NoteEditorModal';
 
@@ -25,7 +25,7 @@ export default function NotesSection({ parentType, parentId }: NotesSectionProps
 
   const relevantNotes = useMemo(() => {
     return filterNotes({ parentType });
-  }, [notes, parentType, filterNotes]);
+  }, [parentType, filterNotes]);
 
   const openEditor = (noteId: string | null = null) => {
     setEditingNoteId(noteId);

@@ -32,7 +32,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onEdit, onDelete, on
       { text: 'Cancel', style: 'cancel' as const },
     ].filter(Boolean) as any[];
     Alert.alert('Note Options', undefined, buttons);
-  }, [note.pinned, onTogglePin, onEdit, onDelete, showAlert]);
+  }, [note.pinned, onTogglePin, onEdit, onDelete]);
 
   const title = note.title?.trim() ? note.title : 'Untitled Note';
   const contentPreview = note.content?.trim()

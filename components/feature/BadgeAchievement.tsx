@@ -28,7 +28,7 @@ export function BadgeAchievement({ visible, badgeType, badgeName, onDismiss }: B
       opacity.value = 0;
       scale.value = 0;
     }
-  }, [visible]);
+  }, [visible, opacity, scale]);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],

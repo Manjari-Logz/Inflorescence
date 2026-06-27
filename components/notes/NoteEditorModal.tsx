@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useNotes } from '@/hooks/useNotes';
-import { Typography, Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 
 interface NoteEditorModalProps {
   noteId?: string | null;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
   KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar,
@@ -13,7 +13,6 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AppInput } from '@/components/ui/AppInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { EXERCISE_TYPES, ExerciseType, Intensity, Mood, calcCalories, exerciseService } from '@/services/exerciseService';
 
 const INTENSITIES: Intensity[] = ['Low', 'Medium', 'High'];

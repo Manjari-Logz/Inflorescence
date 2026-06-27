@@ -15,9 +15,9 @@ import { useAlert } from '@/hooks/useAlert';
 import { useTasks } from '@/hooks/useTasks';
 import { useBadges } from '@/hooks/useBadges';
 import { useEvents } from '@/hooks/useEvents';
-import { useBooks } from '@/hooks/useModules';
-import { useExercise } from '@/hooks/useModules';
-import { useMoneyVault } from '@/hooks/useModules';
+import { useBooks , useExercise , useMoneyVault } from '@/hooks/useModules';
+
+
 import { useGoals } from '@/hooks/useGoals';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useDrawer } from '@/contexts/DrawerContext';
@@ -183,7 +183,7 @@ export default function HomeScreen() {
         {/* Today's Priorities */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Priorities</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Today&apos;s Priorities</Text>
             <Pressable onPress={() => router.push('/(tabs)/tasks')} style={styles.seeAllBtn}>
               <Text style={[styles.seeAll, { color: colors.accent }]}>See all</Text>
               <ChevronRight size={14} color={colors.accent} strokeWidth={2} />

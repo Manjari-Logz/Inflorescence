@@ -71,12 +71,12 @@ export function NotificationInitializer() {
       }
     })();
   }, [
-    user?.id,
-    tasks?.length,
-    habits?.length,
-    hackathons?.length,
-    shortGoals?.length,
-    longGoals?.length
+    user,
+    tasks,
+    habits,
+    hackathons,
+    shortGoals,
+    longGoals
   ]);
 
   return null;

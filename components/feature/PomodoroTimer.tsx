@@ -31,7 +31,7 @@ export function PomodoroTimer() {
     setSecondsLeft(MODES[idx][ph === 'work' ? 'work' : 'break'] * 60);
   }, [modeIdx]);
 
-  useEffect(() => { resetTimer(modeIdx, phase); }, [modeIdx]);
+  useEffect(() => { resetTimer(modeIdx, phase); }, [modeIdx, phase, resetTimer]);
 
   useEffect(() => {
     if (running) {
@@ -61,7 +61,7 @@ export function PomodoroTimer() {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [running, phase, modeIdx]);
+  }, [running, phase, modeIdx, mode.label, mode.work, user]);
 
   const mins = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
   const secs = (secondsLeft % 60).toString().padStart(2, '0');
