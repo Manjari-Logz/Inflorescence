@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
   KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
-  TextInput, useWindowDimensions, Animated, FlatList,
+  TextInput, useWindowDimensions, Animated, FlatList, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -10,9 +10,11 @@ import {
   Trash2, CheckSquare, X, Edit2, Archive, RotateCcw,
   Menu, Folder, Inbox, ChevronRight, Sparkles, Award, Flame, Zap, BarChart2, AlertCircle
 } from 'lucide-react-native';
-import { useAuth, useAlert } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
+import { useAlert } from '@/hooks/useAlert';
 import { useTasks } from '@/hooks/useTasks';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useDrawer } from '@/contexts/DrawerContext';
 import { useCustomSections } from '@/hooks/useModules';
 import { useBadges } from '@/hooks/useBadges';
 import { Spacing, Radius, Typography } from '@/constants/theme';
@@ -25,7 +27,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ProgressRing } from '@/components/feature/tasks/ProgressRing';
 import { ProductivityCharts } from '@/components/feature/tasks/ProductivityCharts';
 import { TaskCard } from '@/components/feature/tasks/TaskCard';
-import { Task } from '@/services/tasksService';
+import { Task, tasksService } from '@/services/tasksService';
 
 const PRIORITY_VALUES = ['Low', 'Medium', 'High', 'Critical'] as const;
 const DIFFICULTY_VALUES = ['Easy', 'Medium', 'Hard'] as const;
@@ -58,6 +60,7 @@ export default function TasksScreen() {
   const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
+  const { openDrawer } = useDrawer();
 
   const { user } = useAuth();
   const { tasks, loading, addTask, updateTask, removeTask, completeTask, archiveTask, restoreTask } = useTasks();
@@ -86,6 +89,11 @@ export default function TasksScreen() {
   const [estimatedTime, setEstimatedTime] = useState('');
   const [notes, setNotes] = useState('');
   const [progress, setProgress] = useState('0');
+  
+  // Recurrence and Reminder states
+  const [repeatType, setRepeatType] = useState<'none' | 'daily'>('none');
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState('08:00');
 
   // Mobile Drawer State
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -113,10 +121,10 @@ export default function TasksScreen() {
   }, [customSections]);
 
   // Compute Gamification metrics
-  const completedCount = useMemo(() => tasks.filter(t => t.completed).length, [tasks]);
-  const totalActive = useMemo(() => tasks.filter(t => !t.completed && !t.archived).length, [tasks]);
-  const overdueCount = useMemo(() => tasks.filter(t => !t.completed && !t.archived && t.deadline && new Date(t.deadline!) < today).length, [tasks]);
-  const todayTasksCount = useMemo(() => tasks.filter(t => !t.completed && !t.archived && t.deadline && new Date(t.deadline).toDateString() === today.toDateString()).length, [tasks]);
+  const completedCount = useMemo(() => tasks.filter(t => tasksService.isCompletedForToday(t)).length, [tasks]);
+  const totalActive = useMemo(() => tasks.filter(t => !tasksService.isCompletedForToday(t) && !t.archived).length, [tasks]);
+  const overdueCount = useMemo(() => tasks.filter(t => !tasksService.isCompletedForToday(t) && !t.archived && t.deadline && new Date(t.deadline!) < today).length, [tasks]);
+  const todayTasksCount = useMemo(() => tasks.filter(t => !tasksService.isCompletedForToday(t) && !t.archived && t.deadline && new Date(t.deadline).toDateString() === today.toDateString()).length, [tasks]);
   
   const xp = completedCount * 10;
   const level = Math.floor(xp / 100) + 1;
@@ -126,8 +134,18 @@ export default function TasksScreen() {
   // Calculate Streak
   const streakCount = useMemo(() => {
     const completedDates = tasks
-      .filter(t => t.completed && t.completed_at)
-      .map(t => new Date(t.completed_at!).toDateString());
+      .filter(t => {
+        if (t.repeatType === 'daily' && t.completedDates) {
+          return t.completedDates.length > 0;
+        }
+        return t.completed && t.completed_at;
+      })
+      .flatMap(t => {
+        if (t.repeatType === 'daily' && t.completedDates) {
+          return t.completedDates;
+        }
+        return t.completed_at ? [new Date(t.completed_at).toISOString().split('T')[0]] : [];
+      });
     
     const uniqueDates = new Set(completedDates);
     let streak = 0;
@@ -180,28 +198,28 @@ export default function TasksScreen() {
 
     const matchingCustomSection = customSections.find(s => s.id === activeFilterId);
     if (matchingCustomSection) {
-      return list.filter(t => !t.completed && !t.archived && t.category === matchingCustomSection.name);
+      return list.filter(t => !tasksService.isCompletedForToday(t) && !t.archived && t.category === matchingCustomSection.name);
     }
 
     switch (activeFilterId) {
       case 'all':
-        return list.filter(t => !t.completed && !t.archived);
+        return list.filter(t => !tasksService.isCompletedForToday(t) && !t.archived);
       case 'today':
-        return list.filter(t => !t.completed && !t.archived && t.deadline && new Date(t.deadline).toDateString() === today.toDateString());
+        return list.filter(t => !tasksService.isCompletedForToday(t) && !t.archived && t.deadline && new Date(t.deadline).toDateString() === today.toDateString());
       case 'upcoming':
-        return list.filter(t => !t.completed && !t.archived && t.deadline && new Date(t.deadline) > today);
+        return list.filter(t => !tasksService.isCompletedForToday(t) && !t.archived && t.deadline && new Date(t.deadline) > today);
       case 'completed':
-        return list.filter(t => t.completed && !t.archived);
+        return list.filter(t => tasksService.isCompletedForToday(t) && !t.archived);
       case 'high':
-        return list.filter(t => !t.completed && !t.archived && (t.priority === 'High' || t.priority === 'Critical'));
+        return list.filter(t => !tasksService.isCompletedForToday(t) && !t.archived && (t.priority === 'High' || t.priority === 'Critical'));
       case 'personal':
-        return list.filter(t => !t.completed && !t.archived && t.category === 'Personal');
+        return list.filter(t => !tasksService.isCompletedForToday(t) && !t.archived && t.category === 'Personal');
       case 'work':
-        return list.filter(t => !t.completed && !t.archived && t.category === 'Work');
+        return list.filter(t => !tasksService.isCompletedForToday(t) && !t.archived && t.category === 'Work');
       case 'archived':
         return list.filter(t => t.archived);
       default:
-        return list.filter(t => !t.completed && !t.archived);
+        return list.filter(t => !tasksService.isCompletedForToday(t) && !t.archived);
     }
   }, [tasks, activeFilterId, searchQuery, customSections]);
 
@@ -209,6 +227,7 @@ export default function TasksScreen() {
     setEditId(null); setTitle(''); setDescription(''); setDeadline('');
     setCategory('General'); setPriority('Medium'); setDifficulty('Medium');
     setEstimatedTime(''); setNotes(''); setProgress('0');
+    setRepeatType('none'); setReminderEnabled(false); setReminderTime('08:00');
   };
 
   const openEdit = (task: Task) => {
@@ -222,6 +241,9 @@ export default function TasksScreen() {
     setEstimatedTime(task.estimated_time ? String(task.estimated_time) : '');
     setNotes(task.notes ?? '');
     setProgress(String(task.progress ?? 0));
+    setRepeatType(task.repeatType ?? 'none');
+    setReminderEnabled(task.reminderEnabled ?? false);
+    setReminderTime(task.reminderTime ?? '08:00');
     setModal(true);
   };
 
@@ -239,6 +261,9 @@ export default function TasksScreen() {
       notes: notes.trim() || undefined,
       progress: parseInt(progress, 10) || 0,
       completed: false,
+      repeatType,
+      reminderEnabled: repeatType === 'daily' ? reminderEnabled : false,
+      reminderTime: repeatType === 'daily' && reminderEnabled ? reminderTime : undefined,
     };
     if (editId) {
       await updateTask(editId, payload);
@@ -254,12 +279,12 @@ export default function TasksScreen() {
     triggerCelebration();
     const result = await completeTask(id);
     if (result?.badge) {
-      showAlert('Badge Earned!', `You unlocked the ${result.badgeName}! Keep going!`, [{ text: 'Awesome!', style: 'default' }]);
+      Alert.alert('Badge Earned!', `You unlocked the ${result.badgeName}! Keep going!`, [{ text: 'Awesome!', style: 'default' }]);
     }
   };
 
   const handleDelete = (id: string, taskTitle: string) => {
-    showAlert('Delete Task', `Delete "${taskTitle}"?`, [
+    Alert.alert('Delete Task', `Delete "${taskTitle}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => removeTask(id) },
     ]);
@@ -271,7 +296,7 @@ export default function TasksScreen() {
       showAlert('Clear Tasks', 'No completed tasks to archive.');
       return;
     }
-    showAlert('Archive Completed', `Archive all ${completedTasks.length} completed tasks?`, [
+    Alert.alert('Archive Completed', `Archive all ${completedTasks.length} completed tasks?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Archive', style: 'default', onPress: async () => {
         for (const t of completedTasks) {
@@ -333,6 +358,12 @@ export default function TasksScreen() {
       {/* 1. Glassmorphic Header Card */}
       <View style={styles.headerCard}>
         <View style={styles.headerTop}>
+          <Pressable
+            style={[styles.menuBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
+            onPress={openDrawer}
+          >
+            <Menu size={18} color={colors.textMuted} strokeWidth={2} />
+          </Pressable>
           <View style={styles.greetingCol}>
             <Text style={[styles.greetingText, { color: colors.textSecondary }]}>
               Hello, {user?.username || 'Explorer'}
@@ -341,7 +372,7 @@ export default function TasksScreen() {
               {today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
             </Text>
             <Text style={[styles.quoteText, { color: colors.textMuted }]}>
-              "{motivationalQuote}"
+              &ldquo;{motivationalQuote}&rdquo;
             </Text>
           </View>
 
@@ -852,6 +883,77 @@ export default function TasksScreen() {
                   </View>
                 </ScrollView>
 
+                {/* Recurrence Section */}
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Recurrence</Text>
+                <View style={styles.chipRow}>
+                  <Pressable
+                    style={[
+                      styles.chipItem,
+                      { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
+                      repeatType === 'none' && { borderColor: colors.accent, backgroundColor: colors.accent + '18' }
+                    ]}
+                    onPress={() => setRepeatType('none')}
+                  >
+                    <Text style={[styles.chipItemText, { color: repeatType === 'none' ? colors.accent : colors.textMuted }]}>
+                      None
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.chipItem,
+                      { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
+                      repeatType === 'daily' && { borderColor: colors.accent, backgroundColor: colors.accent + '18' }
+                    ]}
+                    onPress={() => setRepeatType('daily')}
+                  >
+                    <Text style={[styles.chipItemText, { color: repeatType === 'daily' ? colors.accent : colors.textMuted }]}>
+                      Every Day
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {/* Reminder Section - Only show when recurrence is daily */}
+                {repeatType === 'daily' && (
+                  <>
+                    <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: Spacing.md }]}>Daily Reminder</Text>
+                    <View style={[styles.reminderToggleRow, { borderColor: 'rgba(255, 255, 255, 0.08)' }]}>
+                      <Text style={[styles.reminderToggleText, { color: colors.text }]}>Enable Daily Reminder</Text>
+                      <Pressable
+                        style={[
+                          styles.reminderToggleSwitch,
+                          reminderEnabled ? { backgroundColor: colors.accent } : { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                        ]}
+                        onPress={() => setReminderEnabled(!reminderEnabled)}
+                        hitSlop={12}
+                      >
+                        <View style={[
+                          styles.reminderToggleKnob,
+                          reminderEnabled ? { transform: [{ translateX: 20 }] } : { transform: [{ translateX: 0 }] }
+                        ]} />
+                      </Pressable>
+                    </View>
+
+                    {reminderEnabled && (
+                      <>
+                        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Reminder Time</Text>
+                        <View style={styles.timePickerRow}>
+                          <TextInput
+                            style={[styles.timePickerInput, { color: colors.text, borderColor: 'rgba(255, 255, 255, 0.08)' }]}
+                            value={reminderTime}
+                            onChangeText={setReminderTime}
+                            placeholder="08:00"
+                            placeholderTextColor={colors.textDim}
+                            maxLength={5}
+                          />
+                          <Text style={[styles.timePickerHelper, { color: colors.textMuted }]}>
+                            Format: HH:MM (24-hour)
+                          </Text>
+                        </View>
+                      </>
+                    )}
+                  </>
+                )}
+
                 <PrimaryButton
                   title={editId ? 'Commit Changes' : 'Publish Task'}
                   onPress={handleSave}
@@ -926,6 +1028,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  menuBtn: { width: 36, height: 36, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginRight: Spacing.sm },
   greetingCol: {
     flex: 1,
     gap: 3,
@@ -1366,5 +1469,51 @@ const styles = StyleSheet.create({
   chipItemText: {
     fontSize: 12.5,
     fontWeight: '600',
+  },
+
+  // Reminder Toggle Styles
+  reminderToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+  },
+  reminderToggleText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  reminderToggleSwitch: {
+    width: 48,
+    height: 26,
+    borderRadius: 13,
+    padding: 2,
+  },
+  reminderToggleKnob: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+  },
+
+  // Time Picker Styles
+  timePickerRow: {
+    gap: Spacing.sm,
+  },
+  timePickerInput: {
+    flex: 1,
+    height: 44,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    fontSize: 14,
+  },
+  timePickerHelper: {
+    fontSize: 11,
+    marginTop: 2,
   },
 });

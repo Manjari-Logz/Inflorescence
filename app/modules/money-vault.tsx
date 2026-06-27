@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, TextInput,
+  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, TextInput, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -9,7 +9,7 @@ import {
   X, DollarSign, ShoppingBag, Utensils, Car, BookOpen,
   Zap, Heart, Music, MoreHorizontal, Settings, ChevronRight,
 } from 'lucide-react-native';
-import { useAlert } from '@/template';
+import { useAlert } from '@/hooks/useAlert';
 import { useMoneyVault } from '@/hooks/useModules';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius, Colors } from '@/constants/theme';
@@ -222,7 +222,7 @@ export default function MoneyVaultScreen() {
                   <Text style={[styles.expMeta, { color: colors.textMuted }]}>{exp.date} · {exp.payment_method}</Text>
                 </Pressable>
                 <Text style={[styles.expAmount, { color: Colors.error }]}>-₹{exp.amount.toLocaleString()}</Text>
-                <Pressable hitSlop={8} onPress={() => showAlert('Delete', 'Remove this expense?', [
+                <Pressable hitSlop={8} onPress={() => Alert.alert('Delete', 'Remove this expense?', [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Delete', style: 'destructive', onPress: () => removeExpense(exp.id) },
                 ])}>

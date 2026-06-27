@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface Note {
   id: string;
@@ -20,8 +20,7 @@ export interface Note {
 
 export const notesService = {
   async fetch(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('notes')
       .select('*')
       .eq('user_id', userId)
@@ -30,8 +29,7 @@ export const notesService = {
   },
 
   async create(input: Omit<Note, 'id' | 'created_at' | 'updated_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('notes')
       .insert({ ...input, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .select()
@@ -40,8 +38,7 @@ export const notesService = {
   },
 
   async update(id: string, updates: Partial<Note>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('notes')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -51,8 +48,8 @@ export const notesService = {
   },
 
   async remove(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('notes').delete().eq('id', id);
+    
+    const { error } = await supabase.from('notes').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 };

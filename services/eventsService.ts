@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface Hackathon {
   id: string;
@@ -29,8 +29,7 @@ export interface Round {
 
 export const eventsService = {
   async fetchHackathons(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('hackathons')
       .select('*, rounds:hackathon_rounds(*)')
       .eq('user_id', userId)
@@ -39,38 +38,38 @@ export const eventsService = {
   },
 
   async createHackathon(input: Omit<Hackathon, 'id' | 'created_at' | 'rounds'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('hackathons').insert(input).select().single();
+    
+    const { data, error } = await supabase.from('hackathons').insert(input).select().single();
     return { data: data as Hackathon | null, error: error?.message ?? null };
   },
 
   async updateHackathon(id: string, updates: Partial<Omit<Hackathon, 'id' | 'created_at' | 'rounds'>>) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('hackathons').update(updates).eq('id', id);
+    
+    const { error } = await supabase.from('hackathons').update(updates).eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async deleteHackathon(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('hackathons').delete().eq('id', id);
+    
+    const { error } = await supabase.from('hackathons').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async createRound(input: Omit<Round, 'id' | 'created_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('hackathon_rounds').insert(input).select().single();
+    
+    const { data, error } = await supabase.from('hackathon_rounds').insert(input).select().single();
     return { data: data as Round | null, error: error?.message ?? null };
   },
 
   async updateRound(id: string, updates: Partial<Round>) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('hackathon_rounds').update(updates).eq('id', id);
+    
+    const { error } = await supabase.from('hackathon_rounds').update(updates).eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async deleteRound(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('hackathon_rounds').delete().eq('id', id);
+    
+    const { error } = await supabase.from('hackathon_rounds').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 };

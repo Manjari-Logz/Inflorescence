@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, TextInput,
+  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, TextInput, Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BookOpen, Plus, Edit2, Trash2, X, BookMarked, ChevronDown, ChevronUp } from 'lucide-react-native';
-import { useAuth, useAlert } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
+import { useAlert } from '@/hooks/useAlert';
 import { useBooks } from '@/hooks/useModules';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius, Colors } from '@/constants/theme';
@@ -93,7 +94,7 @@ export default function BooksScreen() {
     if (status === 'completed' && user) {
       const completed = books.filter(b => b.status === 'completed').length + 1;
       const result = await badgesService.checkReadingBadge(user.id, completed);
-      if (result.awarded) showAlert('Badge Unlocked!', result.name ?? 'Reader Badge');
+      if (result.awarded && 'name' in result) showAlert('Badge Unlocked!', result.name ?? 'Reader Badge');
     }
     setInlineEditId(null);
   };
@@ -233,7 +234,7 @@ export default function BooksScreen() {
                           <Text style={[styles.markDoneText, { color: Colors.warning }]}>Pause</Text>
                         </Pressable>
                       )}
-                      <Pressable onPress={() => showAlert('Delete', `Remove "${book.title}"?`, [
+                      <Pressable onPress={() => Alert.alert('Delete', `Remove "${book.title}"?`, [
                         { text: 'Cancel', style: 'cancel' },
                         { text: 'Delete', style: 'destructive', onPress: () => removeBook(book.id) },
                       ])} hitSlop={8}>

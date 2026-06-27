@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export type PlacementStage = 'applied' | 'screening' | 'interview' | 'offer' | 'rejected' | 'accepted';
 
@@ -27,26 +27,22 @@ export const PLACEMENT_STAGES: { key: PlacementStage; label: string; color: stri
 
 export const placementService = {
   async fetch(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('placement_companies').select('*').eq('user_id', userId).order('updated_at', { ascending: false });
+    const { data, error } = await supabase.from('placement_companies').select('*').eq('user_id', userId).order('updated_at', { ascending: false });
     return { data: data as PlacementCompany[] | null, error: error?.message ?? null };
   },
 
   async create(input: Omit<PlacementCompany, 'id' | 'created_at' | 'updated_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('placement_companies').insert(input).select().single();
+    const { data, error } = await supabase.from('placement_companies').insert(input).select().single();
     return { data: data as PlacementCompany | null, error: error?.message ?? null };
   },
 
   async update(id: string, updates: Partial<PlacementCompany>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('placement_companies').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+    const { data, error } = await supabase.from('placement_companies').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id).select().single();
     return { data: data as PlacementCompany | null, error: error?.message ?? null };
   },
 
   async remove(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('placement_companies').delete().eq('id', id);
+    const { error } = await supabase.from('placement_companies').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 

@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, ActivityIndicator, StatusBar, Dimen
 import { BarChart } from 'react-native-chart-kit';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BookOpen, Target, TrendingUp, Smile, Briefcase, Timer, BarChart2 } from 'lucide-react-native';
-import { useAuth } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
 import { useStudy } from '@/hooks/useStudy';
 import { useBooks } from '@/hooks/useModules';
 import { useGoals } from '@/hooks/useGoals';

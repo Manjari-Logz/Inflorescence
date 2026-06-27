@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export type ExpenseCategory = 'Food' | 'Travel' | 'Shopping' | 'Education' | 'Bills' | 'Health' | 'Entertainment' | 'Other';
 export type PaymentMethod = 'Cash' | 'UPI' | 'Card' | 'Net Banking' | 'Other';
@@ -25,8 +25,7 @@ export interface MoneyVaultSettings {
 
 export const moneyVaultService = {
   async fetchExpenses(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('expenses')
       .select('*')
       .eq('user_id', userId)
@@ -35,32 +34,32 @@ export const moneyVaultService = {
   },
 
   async createExpense(input: Omit<Expense, 'id' | 'created_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('expenses').insert(input).select().single();
+    
+    const { data, error } = await supabase.from('expenses').insert(input).select().single();
     return { data: data as Expense | null, error: error?.message ?? null };
   },
 
   async updateExpense(id: string, updates: Partial<Expense>) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('expenses').update(updates).eq('id', id);
+    
+    const { error } = await supabase.from('expenses').update(updates).eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async deleteExpense(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('expenses').delete().eq('id', id);
+    
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async fetchSettings(userId: string): Promise<MoneyVaultSettings> {
-    const client = getSupabaseClient();
-    const { data } = await client.from('money_vault_settings').select('*').eq('user_id', userId).single();
+    
+    const { data } = await supabase.from('money_vault_settings').select('*').eq('user_id', userId).single();
     return data ?? { cash_in_hand: 0, wallet_balance: 0, bank_balance: 0, savings_goal: 0, emergency_fund: 0, monthly_budget: 0 };
   },
 
   async upsertSettings(userId: string, settings: MoneyVaultSettings) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('money_vault_settings').upsert({ user_id: userId, ...settings }, { onConflict: 'user_id' });
+    
+    const { error } = await supabase.from('money_vault_settings').upsert({ user_id: userId, ...settings }, { onConflict: 'user_id' });
     return { error: error?.message ?? null };
   },
 

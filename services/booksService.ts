@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface Book {
   id: string;
@@ -19,26 +19,26 @@ export interface Book {
 
 export const booksService = {
   async fetch(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('books').select('*').eq('user_id', userId).order('updated_at', { ascending: false });
+    
+    const { data, error } = await supabase.from('books').select('*').eq('user_id', userId).order('updated_at', { ascending: false });
     return { data: data as Book[] | null, error: error?.message ?? null };
   },
 
   async create(input: Omit<Book, 'id' | 'created_at' | 'updated_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('books').insert(input).select().single();
+    
+    const { data, error } = await supabase.from('books').insert(input).select().single();
     return { data: data as Book | null, error: error?.message ?? null };
   },
 
   async update(id: string, updates: Partial<Book>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('books').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+    
+    const { data, error } = await supabase.from('books').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id).select().single();
     return { data: data as Book | null, error: error?.message ?? null };
   },
 
   async remove(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('books').delete().eq('id', id);
+    
+    const { error } = await supabase.from('books').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 

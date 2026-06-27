@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export async function pickDocument(types: string[] = ['application/pdf', 'image/*']) {
   const result = await DocumentPicker.getDocumentAsync({ type: types, copyToCacheDirectory: true });
@@ -27,17 +27,16 @@ export async function uploadFile(
   mimeType?: string,
 ): Promise<string | null> {
   try {
-    const client = getSupabaseClient();
     const ext = fileName.split('.').pop() ?? 'bin';
     const path = `${userId}/${folder}/${Date.now()}.${ext}`;
     const response = await fetch(uri);
     const blob = await response.blob();
-    const { error } = await client.storage.from('inflorescence').upload(path, blob, {
+    const { error } = await supabase.storage.from('inflorescence').upload(path, blob, {
       contentType: mimeType ?? blob.type,
       upsert: true,
     });
     if (error) return uri;
-    const { data } = client.storage.from('inflorescence').getPublicUrl(path);
+    const { data } = supabase.storage.from('inflorescence').getPublicUrl(path);
     return data.publicUrl;
   } catch {
     return uri;

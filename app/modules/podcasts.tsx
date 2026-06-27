@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, Dimensions,
+  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, Dimensions, Alert,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAlert } from '@/template';
+import { useAlert } from '@/hooks/useAlert';
 import { usePodcasts } from '@/hooks/useModules';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius } from '@/constants/theme';
@@ -88,7 +88,7 @@ export default function PodcastsScreen() {
                   <Pressable onPress={() => updatePodcast(p.id, { completed: !p.completed })} hitSlop={8}>
                     <MaterialIcons name={p.completed ? 'check-circle' : 'radio-button-unchecked'} size={22} color={p.completed ? colors.success : colors.textDim} />
                   </Pressable>
-                  <Pressable onPress={() => showAlert('Delete', 'Remove this podcast?', [
+                  <Pressable onPress={() => Alert.alert('Delete', 'Remove this podcast?', [
                     { text: 'Cancel', style: 'cancel' },
                     { text: 'Delete', style: 'destructive', onPress: () => removePodcast(p.id) },
                   ])} hitSlop={8}>

@@ -6,7 +6,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Zap, BookOpen, CheckSquare, Target, Activity, Trophy } from 'lucide-react-native';
-import { useAuth, useAlert } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
+import { useAlert } from '@/hooks/useAlert';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius } from '@/constants/theme';
 import { AppInput } from '@/components/ui/AppInput';
@@ -32,24 +33,49 @@ export default function LoginScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleLogin = async () => {
+    console.log('[Login] Login button pressed');
+    console.log('[Login] Email:', email);
+    console.log('[Login] operationLoading:', operationLoading);
     if (!email.trim() || !password) { showAlert('Missing Fields', 'Please enter email and password.'); return; }
-    const { error } = await signInWithPassword(email.trim(), password);
-    if (error) showAlert('Login Failed', error);
+    const result = await signInWithPassword(email.trim(), password);
+    console.log('[Login] Login result:', result);
+    if (result.error) {
+      showAlert('Login Failed', result.error);
+    } else if (result.user) {
+      console.log('[Login] Login successful, navigating to /(tabs)');
+      router.replace('/(tabs)');
+    }
   };
 
   const handleRegister = async () => {
+    console.log('[Login] Signup button pressed');
+    console.log('[Login] Email:', email);
+    console.log('[Login] operationLoading:', operationLoading);
     if (!email.trim() || !password) { showAlert('Missing Fields', 'Please fill all fields.'); return; }
     if (password !== confirmPassword) { showAlert('Password Mismatch', 'Passwords do not match.'); return; }
     if (password.length < 6) { showAlert('Weak Password', 'Password must be at least 6 characters.'); return; }
-    const { error, needsEmailConfirmation } = await signUpWithPassword(email.trim(), password);
-    if (error) { showAlert('Registration Failed', error); return; }
-    if (needsEmailConfirmation) router.push({ pathname: '/verify-email', params: { email: email.trim() } });
+    const result = await signUpWithPassword(email.trim(), password);
+    console.log('[Login] Signup result:', result);
+    if (result.error) { showAlert('Registration Failed', result.error); return; }
+    if (result.needsEmailConfirmation) {
+      console.log('[Login] Email confirmation required, navigating to /verify-email');
+      router.push({ pathname: '/verify-email', params: { email: email.trim() } });
+    } else {
+      console.log('[Login] Email confirmation disabled, auto-entering app');
+      console.log('[Login] Navigating to /(tabs)');
+      router.replace('/(tabs)');
+    }
   };
 
   const handleSendOTP = async () => {
+    console.log('[Login] Send OTP button pressed');
+    console.log('[Login] Email:', email);
+    console.log('[Login] operationLoading:', operationLoading);
     if (!email.trim()) { showAlert('Email Required', 'Enter your email address.'); return; }
-    const { error } = await sendOTP(email.trim());
-    if (error) { showAlert('Error', error); return; }
+    const result = await sendOTP(email.trim());
+    console.log('[Login] Send OTP result:', result);
+    if (result.error) { showAlert('Error', result.error); return; }
+    console.log('[Login] Navigating to /verify-otp');
     router.push({ pathname: '/verify-otp', params: { email: email.trim() } });
   };
 

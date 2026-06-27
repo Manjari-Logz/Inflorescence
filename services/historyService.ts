@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface HistoryRecord {
   id: string;
@@ -22,8 +22,7 @@ export interface HistoryRecord {
 
 export const historyService = {
   async fetch(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('history')
       .select('*')
       .eq('user_id', userId)
@@ -43,13 +42,13 @@ export const historyService = {
   },
 
   async create(input: Omit<HistoryRecord, 'id' | 'created_at'>) {
-    const client = getSupabaseClient();
+    
     const payload = {
       ...input,
       tags: Array.isArray(input.tags) ? input.tags : [],
       completed_at: input.completed_at || new Date().toISOString(),
     };
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('history')
       .insert(payload)
       .select()
@@ -67,8 +66,7 @@ export const historyService = {
   },
 
   async removeByTaskId(taskId: string) {
-    const client = getSupabaseClient();
-    const { error } = await client
+    const { error } = await supabase
       .from('history')
       .delete()
       .eq('task_id', taskId);
@@ -76,8 +74,7 @@ export const historyService = {
   },
 
   async remove(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client
+    const { error } = await supabase
       .from('history')
       .delete()
       .eq('id', id);
@@ -85,8 +82,7 @@ export const historyService = {
   },
 
   async clearAll(userId: string) {
-    const client = getSupabaseClient();
-    const { error } = await client
+    const { error } = await supabase
       .from('history')
       .delete()
       .eq('user_id', userId);

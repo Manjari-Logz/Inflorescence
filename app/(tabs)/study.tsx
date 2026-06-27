@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
+  KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Book, Link,
-  Youtube, FileText, Globe, Cloud, PlusCircle, X,
+  FileText, Globe, Cloud, PlusCircle, X, Menu,
 } from 'lucide-react-native';
-import { useAlert } from '@/template';
+import { useAlert } from '@/hooks/useAlert';
 import { useStudy } from '@/hooks/useStudy';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useDrawer } from '@/contexts/DrawerContext';
 import { Typography, Spacing, Radius, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -20,7 +21,7 @@ import { StudyResource } from '@/services/studyService';
 
 const RESOURCE_TYPES = ['YouTube', 'PDF', 'Website', 'Drive', 'Notes', 'Other'];
 const RESOURCE_ICONS: Record<string, any> = {
-  YouTube: Youtube,
+  YouTube: Globe,
   PDF: FileText,
   Website: Globe,
   Drive: Cloud,
@@ -31,6 +32,7 @@ const RESOURCE_ICONS: Record<string, any> = {
 export default function StudyScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const { openDrawer } = useDrawer();
   const DOMAIN_COLORS = colors?.domainColors || ['#3B82F6', '#2563EB', '#8B5CF6', '#6366F1', '#22C55E', '#F59E0B', '#EF4444', '#EC4899'];
   const { domains, loading, addDomain, deleteDomain, addSubject, deleteSubject, addResource, deleteResource, updateSubjectHours } = useStudy();
   const { showAlert } = useAlert();
@@ -83,6 +85,12 @@ export default function StudyScreen() {
       <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
 
       <View style={styles.header}>
+        <Pressable
+          style={[styles.menuBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
+          onPress={openDrawer}
+        >
+          <Menu size={18} color={colors.textMuted} strokeWidth={2} />
+        </Pressable>
         <View>
           <Text style={[styles.title, { color: colors.text }]}>Study</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>{domains.length} domains · {totalSubjects} subjects · {totalHours}h tracked</Text>
@@ -111,7 +119,7 @@ export default function StudyScreen() {
                   <View style={[styles.domainDot, { backgroundColor: domain.color }]} />
                   <Text style={[styles.domainName, { color: colors.text }]}>{domain.name}</Text>
                   <Text style={[styles.domainMeta, { color: colors.textMuted }]}>{domain.subjects?.length ?? 0}</Text>
-                  <Pressable hitSlop={8} onPress={() => showAlert('Delete Domain', `Delete "${domain.name}" and all its subjects?`, [
+                  <Pressable hitSlop={8} onPress={() => Alert.alert('Delete Domain', `Delete "${domain.name}" and all its subjects?`, [
                     { text: 'Cancel', style: 'cancel' },
                     { text: 'Delete', style: 'destructive', onPress: () => deleteDomain(domain.id) },
                   ])}>
@@ -133,7 +141,7 @@ export default function StudyScreen() {
                             <Pressable hitSlop={8} onPress={() => updateSubjectHours(subject.id, domain.id, (subject.study_hours ?? 0) + 0.5)}>
                               <PlusCircle size={16} color={colors.accent} strokeWidth={2} />
                             </Pressable>
-                            <Pressable hitSlop={8} onPress={() => showAlert('Delete Subject', `Delete "${subject.name}"?`, [
+                            <Pressable hitSlop={8} onPress={() => Alert.alert('Delete Subject', `Delete "${subject.name}"?`, [
                               { text: 'Cancel', style: 'cancel' },
                               { text: 'Delete', style: 'destructive', onPress: () => deleteSubject(subject.id, domain.id) },
                             ])}>
@@ -256,6 +264,7 @@ export default function StudyScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  menuBtn: { width: 40, height: 40, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginRight: Spacing.sm },
   title: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold },
   subtitle: { fontSize: Typography.sizes.sm, marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },

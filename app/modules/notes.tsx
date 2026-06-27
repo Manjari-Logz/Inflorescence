@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar,
+  KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Edit2, Trash2, X, FileText, ChevronRight } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
-import { useAlert } from '@/template';
+import { useAlert } from '@/hooks/useAlert';
 import { useNotes } from '@/hooks/useNotes';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius } from '@/constants/theme';
@@ -63,7 +63,7 @@ export default function NotesScreen() {
   };
 
   const handleDelete = (id: string, noteTitle: string) => {
-    showAlert('Delete Note', `Are you sure you want to delete "${noteTitle}"?`, [
+    Alert.alert('Delete Note', `Are you sure you want to delete "${noteTitle}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => {
           deleteNote(id);

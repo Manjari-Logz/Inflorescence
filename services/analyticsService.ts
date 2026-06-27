@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 import { Task } from '@/services/tasksService';
 import { Book } from '@/services/booksService';
 import { PlacementCompany } from '@/services/placementService';
@@ -15,8 +15,8 @@ export interface AnalyticsData {
 
 export const analyticsService = {
   async fetchPomodoroStats(userId: string) {
-    const client = getSupabaseClient();
-    const { data } = await client.from('pomodoro_sessions').select('*').eq('user_id', userId);
+    
+    const { data } = await supabase.from('pomodoro_sessions').select('*').eq('user_id', userId);
     const sessions = data ?? [];
     const totalMinutes = sessions.reduce((a: number, s: { duration_minutes?: number }) => a + (s.duration_minutes ?? 0), 0);
     return { sessions: sessions.length, totalMinutes };

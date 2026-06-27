@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
+  KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Plus, Flame, CheckCircle2, Circle, Trash2, X, AlertCircle } from 'lucide-react-native';
-import { useAlert } from '@/template';
+import { Plus, Flame, CheckCircle2, Circle, Trash2, X, AlertCircle, Menu } from 'lucide-react-native';
+import { useAlert } from '@/hooks/useAlert';
 import { useHabits } from '@/hooks/useHabits';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useDrawer } from '@/contexts/DrawerContext';
 import { Typography, Spacing, Radius } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -19,6 +20,7 @@ const FREQUENCY_OPTIONS = ['Daily', 'Weekly'];
 export default function HabitsScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const { openDrawer } = useDrawer();
   const { habits, loading, addHabit, deleteHabit, logHabit, unlogHabit } = useHabits();
   const { showAlert } = useAlert();
 
@@ -53,7 +55,7 @@ export default function HabitsScreen() {
   };
 
   const handleDelete = (id: string, habitName: string) => {
-    showAlert('Delete Habit', `Are you sure you want to delete "${habitName}"?`, [
+    Alert.alert('Delete Habit', `Are you sure you want to delete "${habitName}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => deleteHabit(id) },
     ]);
@@ -66,15 +68,20 @@ export default function HabitsScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerLeft}>
             <Text style={[styles.title, { color: colors.text }]}>Habits</Text>
             <Text style={[styles.subtitle, { color: colors.textMuted }]}>
               {habits.length} habits tracked · Maintain your streaks!
             </Text>
           </View>
-          <Pressable style={[styles.addBtn, { backgroundColor: colors.accent }]} onPress={() => setModalVisible(true)}>
-            <Plus size={22} color="#fff" strokeWidth={2.5} />
-          </Pressable>
+          <View style={styles.headerRight}>
+            <Pressable style={[styles.iconBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]} onPress={openDrawer}>
+              <Menu size={18} color={colors.textMuted} strokeWidth={2} />
+            </Pressable>
+            <Pressable style={[styles.addBtn, { backgroundColor: colors.accent }]} onPress={() => setModalVisible(true)}>
+              <Plus size={22} color="#fff" strokeWidth={2.5} />
+            </Pressable>
+          </View>
         </View>
 
         {loading ? (
@@ -244,6 +251,9 @@ export default function HabitsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  headerLeft: { flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  iconBtn: { width: 36, height: 36, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   title: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold },
   subtitle: { fontSize: Typography.sizes.sm, marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },

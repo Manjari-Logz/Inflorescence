@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
+  KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Target, Telescope, Star, Plus, Trash2, CheckSquare,
-  Square, CheckCircle2, Circle, X, ChevronRight,
+  Square, CheckCircle2, Circle, X, ChevronRight, Menu,
 } from 'lucide-react-native';
-import { useAlert } from '@/template';
+import { useAlert } from '@/hooks/useAlert';
 import { useGoals } from '@/hooks/useGoals';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useDrawer } from '@/contexts/DrawerContext';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -30,6 +31,7 @@ function genId() { return Math.random().toString(36).slice(2); }
 export default function GoalsScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const { openDrawer } = useDrawer();
   const { shortGoals, longGoals, dreams, loading, addShortGoal, updateShortGoal, deleteShortGoal, addLongGoal, updateLongGoal, deleteLongGoal, addDream, deleteDream } = useGoals();
   const { showAlert } = useAlert();
   const [activeTab, setActiveTab] = useState(0);
@@ -98,6 +100,12 @@ export default function GoalsScreen() {
       <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
 
       <View style={styles.header}>
+        <Pressable
+          style={[styles.menuBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
+          onPress={openDrawer}
+        >
+          <Menu size={18} color={colors.textMuted} strokeWidth={2} />
+        </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>Goals & Dreams</Text>
         <Pressable style={[styles.addBtn, { backgroundColor: colors.accent }]} onPress={() => { resetForms(); setModal(modalType); }}>
           <Plus size={22} color="#fff" strokeWidth={2.5} />
@@ -133,7 +141,7 @@ export default function GoalsScreen() {
                     <Text style={[styles.goalTitle, { color: colors.text }, g.completed && styles.strikethrough]} numberOfLines={2}>{g.title}</Text>
                     {g.due_date && <Text style={[styles.goalMeta, { color: Colors.warning }]}>Due {g.due_date}</Text>}
                   </View>
-                  <Pressable hitSlop={8} onPress={() => showAlert('Delete Goal', `Delete "${g.title}"?`, [
+                  <Pressable hitSlop={8} onPress={() => Alert.alert('Delete Goal', `Delete "${g.title}"?`, [
                     { text: 'Cancel', style: 'cancel' },
                     { text: 'Delete', style: 'destructive', onPress: () => deleteShortGoal(g.id) },
                   ])}>
@@ -166,7 +174,7 @@ export default function GoalsScreen() {
               <GlassCard key={g.id} style={[styles.goalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.goalHeader}>
                   <Text style={[styles.goalTitle, { color: colors.text, flex: 1 }]} numberOfLines={3}>{g.vision}</Text>
-                  <Pressable hitSlop={8} onPress={() => showAlert('Delete', 'Delete this long-term goal?', [
+                  <Pressable hitSlop={8} onPress={() => Alert.alert('Delete', 'Delete this long-term goal?', [
                     { text: 'Cancel', style: 'cancel' },
                     { text: 'Delete', style: 'destructive', onPress: () => deleteLongGoal(g.id) },
                   ])}>
@@ -329,6 +337,7 @@ export default function GoalsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  menuBtn: { width: 40, height: 40, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginRight: Spacing.sm },
   title: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold },
   addBtn: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
   tabRow: { flexDirection: 'row', marginHorizontal: Spacing.base, marginBottom: Spacing.base, borderRadius: Radius.lg, borderWidth: 1, padding: 4, gap: 4 },

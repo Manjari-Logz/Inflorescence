@@ -3,7 +3,8 @@ import { View, Text, ScrollView, StyleSheet, Pressable, Modal, KeyboardAvoidingV
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckSquare, Square, Paperclip, X, Folder } from 'lucide-react-native';
-import { useAuth, useAlert } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
+import { useAlert } from '@/hooks/useAlert';
 import { useCustomSections } from '@/hooks/useModules';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius } from '@/constants/theme';

@@ -1,8 +1,3 @@
-/*
- * @Description: 
- */
-
-// Powered by OnSpace.AI
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -21,7 +16,7 @@ export default function NotFoundScreen() {
         <MaterialIcons name="photo-camera" size={80} color="#FFD700" />
         <Text style={styles.title}>Page Not Found</Text>
         <Text style={styles.message}>
-          The moment you're looking for seems to have been lost in the shadows.
+          The moment you&apos;re looking for seems to have been lost in the shadows.
         </Text>
         
         <TouchableOpacity 

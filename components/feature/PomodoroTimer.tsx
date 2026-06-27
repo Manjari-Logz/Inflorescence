@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { RotateCcw, Play, Pause, SkipForward } from 'lucide-react-native';
+import supabase from '@/lib/supabase';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { getSupabaseClient, useAuth } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
 
 const MODES = [
   { label: '25/5', work: 25, break: 5 },
@@ -40,8 +41,7 @@ export function PomodoroTimer() {
             clearInterval(intervalRef.current!);
             setRunning(false);
             if (phase === 'work' && user) {
-              const client = getSupabaseClient();
-              client.from('pomodoro_sessions').insert({
+              supabase.from('pomodoro_sessions').insert({
                 user_id: user.id,
                 duration_minutes: mode.work,
                 type: mode.label,

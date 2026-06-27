@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface Reflection {
   id: string;
@@ -33,14 +33,12 @@ export const reflectionService = {
   },
 
   async fetch(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('reflections').select('*').eq('user_id', userId).order('date', { ascending: false });
+    const { data, error } = await supabase.from('reflections').select('*').eq('user_id', userId).order('date', { ascending: false });
     return { data: data as Reflection[] | null, error: error?.message ?? null };
   },
 
   async getToday(userId: string, date: string) {
-    const client = getSupabaseClient();
-    const query = client.from('reflections').select('*').eq('user_id', userId).eq('date', date);
+    const query = supabase.from('reflections').select('*').eq('user_id', userId).eq('date', date);
 
     if (typeof (query as any).maybeSingle === 'function') {
       const { data } = await (query as any).maybeSingle();
@@ -52,20 +50,17 @@ export const reflectionService = {
   },
 
   async create(input: Omit<Reflection, 'id' | 'created_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('reflections').insert(input).select().single();
+    const { data, error } = await supabase.from('reflections').insert(input).select().single();
     return { data: data as Reflection | null, error: error?.message ?? null };
   },
 
   async update(id: string, updates: Partial<Reflection>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('reflections').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('reflections').update(updates).eq('id', id).select().single();
     return { data: data as Reflection | null, error: error?.message ?? null };
   },
 
   async remove(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('reflections').delete().eq('id', id);
+    const { error } = await supabase.from('reflections').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 };

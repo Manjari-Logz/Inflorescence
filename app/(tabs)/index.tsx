@@ -8,9 +8,10 @@ import {
   Bell, Search, CheckCircle2, Clock, Flame, Star,
   BookOpen, Activity, Trophy, Target, ChevronRight,
   Timer, TrendingUp, Calendar, Sun, Sunset, Moon,
-  X, Wallet,
+  X, Wallet, Menu,
 } from 'lucide-react-native';
-import { useAuth, useAlert } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
+import { useAlert } from '@/hooks/useAlert';
 import { useTasks } from '@/hooks/useTasks';
 import { useBadges } from '@/hooks/useBadges';
 import { useEvents } from '@/hooks/useEvents';
@@ -19,6 +20,7 @@ import { useExercise } from '@/hooks/useModules';
 import { useMoneyVault } from '@/hooks/useModules';
 import { useGoals } from '@/hooks/useGoals';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useDrawer } from '@/contexts/DrawerContext';
 import { Typography, Spacing, Radius, MODULE_ROUTES, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -36,6 +38,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const { openDrawer } = useDrawer();
   const { user } = useAuth();
   const { tasks } = useTasks();
   const { badges } = useBadges();
@@ -132,6 +135,12 @@ export default function HomeScreen() {
             <Text style={[styles.date, { color: colors.textMuted }]}>{dateStr}</Text>
           </View>
           <View style={styles.headerRight}>
+            <Pressable
+              style={[styles.iconBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
+              onPress={openDrawer}
+            >
+              <Menu size={18} color={colors.textMuted} strokeWidth={2} />
+            </Pressable>
             <Pressable
               style={[styles.iconBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
               onPress={() => showAlert('Search', 'Search coming soon')}

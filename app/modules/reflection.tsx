@@ -68,7 +68,7 @@ export default function ReflectionScreen() {
         <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: insets.bottom + 40 }}>
           <GlassCard style={{ backgroundColor: colors.surface, borderColor: colors.border, gap: Spacing.md }}>
             <View style={[styles.promptBox, { backgroundColor: colors.accent + '10', borderColor: colors.accent + '30' }]}>
-              <Text style={[styles.promptLabel, { color: colors.accent }]}>Today's Prompt</Text>
+              <Text style={[styles.promptLabel, { color: colors.accent }]}>Today&apos;s Prompt</Text>
               <Text style={[styles.prompt, { color: colors.text }]}>{prompt}</Text>
             </View>
             <AppInput

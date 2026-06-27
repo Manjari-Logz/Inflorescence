@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, StatusBar, Modal,
-  KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
+  KeyboardAvoidingView, Platform, TextInput, ActivityIndicator, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -10,15 +10,17 @@ import {
   GraduationCap, Shield, Bell, Download, User, Wallet,
   Dumbbell, Headphones, Briefcase, Layers, PenLine, LayoutGrid,
   Edit2, X, Camera, Mail, Phone, MapPin, Calendar, GraduationCap as GradCap,
-  Linkedin, Github, Globe, Save,
+  Globe, Save, Menu,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth, useAlert } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
+import { useAlert } from '@/hooks/useAlert';
 import { useTasks } from '@/hooks/useTasks';
 import { useBadges } from '@/hooks/useBadges';
 import { useGoals } from '@/hooks/useGoals';
 import { useEvents } from '@/hooks/useEvents';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useDrawer } from '@/contexts/DrawerContext';
 import { Typography, Spacing, Radius, MODULE_ROUTES, Colors } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -52,6 +54,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, mode, toggleTheme } = useAppTheme();
+  const { openDrawer } = useDrawer();
   const { user, logout, updateProfile } = useAuth();
   const { showAlert } = useAlert();
   const { tasks } = useTasks();
@@ -93,7 +96,7 @@ export default function ProfileScreen() {
   const initials = displayName.slice(0, 2).toUpperCase();
 
   const handleLogout = () => {
-    showAlert('Sign Out', 'Are you sure you want to sign out?', [
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: () => logout() },
     ]);
@@ -142,6 +145,12 @@ export default function ProfileScreen() {
 
         {/* Profile Header */}
         <View style={styles.profileHeader}>
+          <Pressable
+            style={[styles.menuBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
+            onPress={openDrawer}
+          >
+            <Menu size={20} color={colors.textMuted} strokeWidth={2} />
+          </Pressable>
           <View style={[styles.avatar, { backgroundColor: colors.accent + '20', borderColor: colors.accent + '40' }]}>
             <Text style={[styles.avatarInitials, { color: colors.accent }]}>{initials}</Text>
           </View>
@@ -376,6 +385,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.lg },
 
   profileHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.base, marginBottom: Spacing.lg },
+  menuBtn: { width: 40, height: 40, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   avatar: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   avatarInitials: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold },
   profileInfo: { flex: 1, gap: 4 },

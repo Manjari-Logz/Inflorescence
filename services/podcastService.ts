@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface Podcast {
   id: string;
@@ -37,26 +37,22 @@ export function getEmbedUrl(url: string, platform: Podcast['platform']): string 
 
 export const podcastService = {
   async fetch(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('podcasts').select('*').eq('user_id', userId).order('playlist_order', { ascending: true });
+    const { data, error } = await supabase.from('podcasts').select('*').eq('user_id', userId).order('playlist_order', { ascending: true });
     return { data: data as Podcast[] | null, error: error?.message ?? null };
   },
 
   async create(input: Omit<Podcast, 'id' | 'created_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('podcasts').insert(input).select().single();
+    const { data, error } = await supabase.from('podcasts').insert(input).select().single();
     return { data: data as Podcast | null, error: error?.message ?? null };
   },
 
   async update(id: string, updates: Partial<Podcast>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('podcasts').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('podcasts').update(updates).eq('id', id).select().single();
     return { data: data as Podcast | null, error: error?.message ?? null };
   },
 
   async remove(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('podcasts').delete().eq('id', id);
+    const { error } = await supabase.from('podcasts').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 };

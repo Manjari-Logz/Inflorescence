@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Trash2, Flame, Clock, X, Zap, TrendingUp, Edit2 } from 'lucide-react-native';
-import { useAlert } from '@/template';
+import { useAlert } from '@/hooks/useAlert';
 import { useExercise } from '@/hooks/useModules';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius, Colors } from '@/constants/theme';

@@ -27,7 +27,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius } from '@/constants/theme';
-import { useAuth } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
 import { useCustomSections } from '@/hooks/useModules';
 
 const { width } = Dimensions.get('window');

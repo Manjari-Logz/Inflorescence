@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Pressable, StatusBar } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth, useAlert } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
+import { useAlert } from '@/hooks/useAlert';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius } from '@/constants/theme';
 import { AppInput } from '@/components/ui/AppInput';
@@ -20,10 +21,16 @@ export default function VerifyOTPScreen() {
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const handleVerify = async () => {
+    console.log('[VerifyOTP] Verify button pressed');
+    console.log('[VerifyOTP] Email:', email);
     if (!email.trim() || !otp.trim()) { showAlert('Required', 'Enter email and OTP code.'); return; }
     const { error, user } = await verifyOTPAndLogin(email.trim(), otp.trim());
+    console.log('[VerifyOTP] Verification result:', { error, hasUser: !!user });
     if (error) { showAlert('Verification Failed', error); return; }
-    if (user) router.replace('/');
+    if (user) {
+      console.log('[VerifyOTP] Verification successful, navigating to /(tabs)');
+      router.replace('/(tabs)');
+    }
   };
 
   const handleResend = async () => {

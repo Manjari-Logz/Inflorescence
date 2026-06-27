@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface DbNotification {
   id: string;
@@ -13,8 +13,7 @@ export interface DbNotification {
 
 export const notificationsDbService = {
   async fetch(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
@@ -23,8 +22,7 @@ export const notificationsDbService = {
   },
 
   async create(userId: string, title: string, body?: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('notifications')
       .insert({
         user_id: userId,
@@ -40,8 +38,7 @@ export const notificationsDbService = {
   },
 
   async markRead(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client
+    const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
       .eq('id', id);
@@ -49,8 +46,7 @@ export const notificationsDbService = {
   },
 
   async markAllRead(userId: string) {
-    const client = getSupabaseClient();
-    const { error } = await client
+    const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
       .eq('user_id', userId);
@@ -58,8 +54,7 @@ export const notificationsDbService = {
   },
 
   async remove(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client
+    const { error } = await supabase
       .from('notifications')
       .delete()
       .eq('id', id);
@@ -67,8 +62,7 @@ export const notificationsDbService = {
   },
 
   async clearAll(userId: string) {
-    const client = getSupabaseClient();
-    const { error } = await client
+    const { error } = await supabase
       .from('notifications')
       .delete()
       .eq('user_id', userId);

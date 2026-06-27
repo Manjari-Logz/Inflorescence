@@ -35,10 +35,18 @@ CREATE TABLE IF NOT EXISTS tasks (
   completed_at TIMESTAMPTZ,
   archived BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  -- Recurrence fields
+  repeat_type TEXT DEFAULT 'none' CHECK (repeat_type IN ('none', 'daily')),
+  completed_dates JSONB DEFAULT '[]',
+  -- Reminder fields
+  reminder_enabled BOOLEAN DEFAULT FALSE,
+  reminder_time TEXT,
+  notification_id TEXT
 );
--- Add archived column if upgrading existing schema
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
+-- Add indexes for recurring tasks
+CREATE INDEX IF NOT EXISTS idx_tasks_repeat_type ON tasks(repeat_type);
+CREATE INDEX IF NOT EXISTS idx_tasks_reminder_enabled ON tasks(reminder_enabled);
 
 CREATE TABLE IF NOT EXISTS task_progress (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -236,8 +244,11 @@ ALTER TABLE exercise_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE money_vault_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users manage own exercise" ON exercise_logs;
 CREATE POLICY "Users manage own exercise" ON exercise_logs FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own expenses" ON expenses;
 CREATE POLICY "Users manage own expenses" ON expenses FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own vault settings" ON money_vault_settings;
 CREATE POLICY "Users manage own vault settings" ON money_vault_settings FOR ALL USING (auth.uid() = user_id);
 
 -- Books (extended)
@@ -271,7 +282,6 @@ ALTER TABLE podcasts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE placement_companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE custom_sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE custom_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE exercise_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reflections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
@@ -284,24 +294,39 @@ ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users manage own books" ON books;
 CREATE POLICY "Users manage own books" ON books FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own podcasts" ON podcasts;
 CREATE POLICY "Users manage own podcasts" ON podcasts FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own placement" ON placement_companies;
 CREATE POLICY "Users manage own placement" ON placement_companies FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own sections" ON custom_sections;
 CREATE POLICY "Users manage own sections" ON custom_sections FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own items" ON custom_items;
 CREATE POLICY "Users manage own items" ON custom_items FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users manage own exercise" ON exercise_logs FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own reflections" ON reflections;
 CREATE POLICY "Users manage own reflections" ON reflections FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own tokens" ON push_tokens;
 CREATE POLICY "Users manage own tokens" ON push_tokens FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own tasks" ON tasks;
 CREATE POLICY "Users manage own tasks" ON tasks FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own task progress" ON task_progress;
 CREATE POLICY "Users manage own task progress" ON task_progress FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own hackathons" ON hackathons;
 CREATE POLICY "Users manage own hackathons" ON hackathons FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own hackathon rounds" ON hackathon_rounds;
 CREATE POLICY "Users manage own hackathon rounds" ON hackathon_rounds FOR ALL USING (
   auth.uid() = (SELECT user_id FROM hackathons WHERE id = hackathon_rounds.hackathon_id)
 );
+DROP POLICY IF EXISTS "Users manage own study chambers" ON study_chambers;
 CREATE POLICY "Users manage own study chambers" ON study_chambers FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own goals" ON goals;
 CREATE POLICY "Users manage own goals" ON goals FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own achievements" ON achievements;
 CREATE POLICY "Users manage own achievements" ON achievements FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own notifications" ON notifications;
 CREATE POLICY "Users manage own notifications" ON notifications FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users manage own settings" ON settings;
 CREATE POLICY "Users manage own settings" ON settings FOR ALL USING (auth.uid() = user_id);
 
 -- Badges
@@ -315,6 +340,7 @@ CREATE TABLE IF NOT EXISTS badges (
   earned_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own badges" ON badges;
 CREATE POLICY "Users manage own badges" ON badges FOR ALL USING (auth.uid() = user_id);
 
 -- Short Goals
@@ -329,6 +355,7 @@ CREATE TABLE IF NOT EXISTS short_goals (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE short_goals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own short goals" ON short_goals;
 CREATE POLICY "Users manage own short goals" ON short_goals FOR ALL USING (auth.uid() = user_id);
 
 -- Long Goals
@@ -344,6 +371,7 @@ CREATE TABLE IF NOT EXISTS long_goals (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE long_goals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own long goals" ON long_goals;
 CREATE POLICY "Users manage own long goals" ON long_goals FOR ALL USING (auth.uid() = user_id);
 
 -- Dreams
@@ -357,6 +385,7 @@ CREATE TABLE IF NOT EXISTS dreams (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE dreams ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own dreams" ON dreams;
 CREATE POLICY "Users manage own dreams" ON dreams FOR ALL USING (auth.uid() = user_id);
 
 -- Study Domains
@@ -368,6 +397,7 @@ CREATE TABLE IF NOT EXISTS study_domains (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE study_domains ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own study domains" ON study_domains;
 CREATE POLICY "Users manage own study domains" ON study_domains FOR ALL USING (auth.uid() = user_id);
 
 -- Study Subjects
@@ -380,6 +410,7 @@ CREATE TABLE IF NOT EXISTS study_subjects (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE study_subjects ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own study subjects" ON study_subjects;
 CREATE POLICY "Users manage own study subjects" ON study_subjects FOR ALL USING (auth.uid() = user_id);
 
 -- Study Resources
@@ -393,6 +424,7 @@ CREATE TABLE IF NOT EXISTS study_resources (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE study_resources ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own study resources" ON study_resources;
 CREATE POLICY "Users manage own study resources" ON study_resources FOR ALL USING (auth.uid() = user_id);
 
 -- Pomodoro Sessions
@@ -406,6 +438,7 @@ CREATE TABLE IF NOT EXISTS pomodoro_sessions (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE pomodoro_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own pomodoro sessions" ON pomodoro_sessions;
 CREATE POLICY "Users manage own pomodoro sessions" ON pomodoro_sessions FOR ALL USING (auth.uid() = user_id);
 
 -- Mood Logs
@@ -420,6 +453,7 @@ CREATE TABLE IF NOT EXISTS mood_logs (
   UNIQUE(user_id, date)
 );
 ALTER TABLE mood_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own mood logs" ON mood_logs;
 CREATE POLICY "Users manage own mood logs" ON mood_logs FOR ALL USING (auth.uid() = user_id);
 
 
@@ -436,6 +470,7 @@ CREATE TABLE IF NOT EXISTS habits (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE habits ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own habits" ON habits;
 CREATE POLICY "Users manage own habits" ON habits FOR ALL USING (auth.uid() = user_id);
 
 -- Habit Logs
@@ -448,6 +483,7 @@ CREATE TABLE IF NOT EXISTS habit_logs (
   UNIQUE(habit_id, date)
 );
 ALTER TABLE habit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own habit logs" ON habit_logs;
 CREATE POLICY "Users manage own habit logs" ON habit_logs FOR ALL USING (auth.uid() = user_id);
 
 -- Notes
@@ -469,6 +505,7 @@ CREATE TABLE IF NOT EXISTS notes (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own notes" ON notes;
 CREATE POLICY "Users manage own notes" ON notes FOR ALL USING (auth.uid() = user_id);
 
 -- Notifications update
@@ -501,6 +538,7 @@ CREATE INDEX IF NOT EXISTS idx_history_project_id ON history(project_id);
 CREATE INDEX IF NOT EXISTS idx_history_category ON history(category);
 
 ALTER TABLE history ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own history" ON history;
 CREATE POLICY "Users manage own history" ON history FOR ALL USING (auth.uid() = user_id);
 
 

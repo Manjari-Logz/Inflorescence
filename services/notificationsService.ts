@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 // Helper to run promises with a timeout to prevent startup blocking or infinite wait
 const withTimeout = <T>(promise: Promise<T>, ms = 3000, fallback: T): Promise<T> => {
@@ -113,10 +113,9 @@ export const notificationsService = {
       }
 
       const token = tokenData.data;
-      const client = getSupabaseClient();
       await withTimeout(
         (async () => {
-          return await client.from('push_tokens').upsert(
+          return await supabase.from('push_tokens').upsert(
             { user_id: userId, token, platform: Platform.OS },
             { onConflict: 'user_id,token' }
           );
@@ -349,6 +348,76 @@ export const notificationsService = {
       );
     } catch (error) {
       console.warn('[notificationsService] Error sending local notification:', error);
+    }
+  },
+
+  // Schedule a daily reminder for a recurring task
+  async scheduleDailyReminder(taskId: string, taskTitle: string, time: string): Promise<string | null> {
+    try {
+      // Cancel existing notification for this task if any
+      await this.cancelTaskReminder(taskId);
+
+      // Parse time string (format: "HH:MM")
+      const [hours, minutes] = time.split(':').map(Number);
+      
+      const notificationId = await withTimeout(
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Daily Reminder',
+            body: `Time to complete: ${taskTitle}`,
+            sound: true,
+            data: { taskId }, // Store taskId to identify the notification
+          },
+          trigger: { 
+            type: Notifications.SchedulableTriggerInputTypes.DAILY, 
+            hour: hours, 
+            minute: minutes 
+          } as any,
+        }),
+        3000,
+        null
+      );
+
+      return notificationId;
+    } catch (error) {
+      console.warn('[notificationsService] Error scheduling daily reminder:', error);
+      return null;
+    }
+  },
+
+  // Cancel a task's reminder notification
+  async cancelTaskReminder(taskId: string): Promise<void> {
+    try {
+      const scheduledNotifications = await withTimeout(
+        Notifications.getAllScheduledNotificationsAsync(),
+        2000,
+        []
+      );
+
+      for (const notification of scheduledNotifications) {
+        if (notification.content?.data?.taskId === taskId) {
+          await withTimeout(
+            Notifications.cancelScheduledNotificationAsync(notification.identifier),
+            1000,
+            null
+          );
+        }
+      }
+    } catch (error) {
+      console.warn('[notificationsService] Error canceling task reminder:', error);
+    }
+  },
+
+  // Cancel notification by ID
+  async cancelNotificationById(notificationId: string): Promise<void> {
+    try {
+      await withTimeout(
+        Notifications.cancelScheduledNotificationAsync(notificationId),
+        1000,
+        null
+      );
+    } catch (error) {
+      console.warn('[notificationsService] Error canceling notification by ID:', error);
     }
   },
 };

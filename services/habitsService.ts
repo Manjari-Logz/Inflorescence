@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface Habit {
   id: string;
@@ -23,8 +23,7 @@ export interface HabitLog {
 
 export const habitsService = {
   async fetch(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('habits')
       .select('*, habit_logs(*)')
       .eq('user_id', userId)
@@ -33,8 +32,7 @@ export const habitsService = {
   },
 
   async create(input: Omit<Habit, 'id' | 'streak' | 'created_at' | 'updated_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('habits')
       .insert({ ...input, streak: 0 })
       .select()
@@ -43,8 +41,7 @@ export const habitsService = {
   },
 
   async update(id: string, updates: Partial<Habit>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('habits')
       .update(updates)
       .eq('id', id)
@@ -54,16 +51,16 @@ export const habitsService = {
   },
 
   async remove(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('habits').delete().eq('id', id);
+    
+    const { error } = await supabase.from('habits').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async log(habitId: string, userId: string, dateStr: string) {
-    const client = getSupabaseClient();
+    
     
     // 1. Insert into habit_logs
-    const { data: logData, error: logError } = await client
+    const { data: logData, error: logError } = await supabase
       .from('habit_logs')
       .insert({ habit_id: habitId, user_id: userId, date: dateStr })
       .select()
@@ -72,7 +69,7 @@ export const habitsService = {
     if (logError) return { log: null, error: logError.message };
 
     // 2. Fetch all logs for this habit to compute streak
-    const { data: allLogs } = await client
+    const { data: allLogs } = await supabase
       .from('habit_logs')
       .select('date')
       .eq('habit_id', habitId)
@@ -110,10 +107,10 @@ export const habitsService = {
   },
 
   async unlog(habitId: string, userId: string, dateStr: string) {
-    const client = getSupabaseClient();
+    
 
     // 1. Delete from habit_logs
-    const { error: deleteError } = await client
+    const { error: deleteError } = await supabase
       .from('habit_logs')
       .delete()
       .eq('habit_id', habitId)
@@ -122,7 +119,7 @@ export const habitsService = {
     if (deleteError) return { error: deleteError.message };
 
     // 2. Re-fetch and re-calculate streak
-    const { data: allLogs } = await client
+    const { data: allLogs } = await supabase
       .from('habit_logs')
       .select('date')
       .eq('habit_id', habitId)

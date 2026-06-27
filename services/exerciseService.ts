@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export type ExerciseType =
   | 'running' | 'walking' | 'cycling' | 'swimming'
@@ -46,8 +46,7 @@ export function calcCalories(type: ExerciseType, durationMinutes: number, intens
 
 export const exerciseService = {
   async fetch(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('exercise_logs')
       .select('*')
       .eq('user_id', userId)
@@ -56,20 +55,20 @@ export const exerciseService = {
   },
 
   async create(input: Omit<ExerciseLog, 'id' | 'created_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('exercise_logs').insert(input).select().single();
+    
+    const { data, error } = await supabase.from('exercise_logs').insert(input).select().single();
     return { data: data as ExerciseLog | null, error: error?.message ?? null };
   },
 
   async update(id: string, updates: Partial<ExerciseLog>) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('exercise_logs').update(updates).eq('id', id);
+    
+    const { error } = await supabase.from('exercise_logs').update(updates).eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async remove(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('exercise_logs').delete().eq('id', id);
+    
+    const { error } = await supabase.from('exercise_logs').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 

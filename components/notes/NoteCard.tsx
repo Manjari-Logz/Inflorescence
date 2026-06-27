@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
+  Alert,
 } from 'react-native';
 import { Note } from '@/services/notesService';
 import { MoreHorizontal, Pin, Calendar, Tag } from 'lucide-react-native';
-import { useAlert } from '@/template';
+import { useAlert } from '@/hooks/useAlert';
 import { Colors, Typography, Radius, Shadows, Spacing } from '@/constants/theme';
 
 interface NoteCardProps {
@@ -30,7 +31,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onEdit, onDelete, on
       onDelete ? { text: 'Delete', style: 'destructive' as const, onPress: () => onDelete() } : null,
       { text: 'Cancel', style: 'cancel' as const },
     ].filter(Boolean) as any[];
-    showAlert('Note Options', undefined, buttons);
+    Alert.alert('Note Options', undefined, buttons);
   }, [note.pinned, onTogglePin, onEdit, onDelete, showAlert]);
 
   const title = note.title?.trim() ? note.title : 'Untitled Note';
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.xs,
   },
   title: {
-    ...Typography.weights.semibold,
+    fontWeight: Typography.weights.semibold,
     fontSize: Typography.sizes.md,
   },
   menuButton: {

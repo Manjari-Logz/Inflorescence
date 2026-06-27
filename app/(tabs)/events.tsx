@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, Modal,
-  KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
+  KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Trophy, Calendar,
-  Clock, MapPin, ExternalLink, Circle, X, Edit2, TrendingUp,
+  Clock, MapPin, ExternalLink, Circle, X, Edit2, TrendingUp, Menu,
 } from 'lucide-react-native';
-import { useAlert } from '@/template';
+import { useAlert } from '@/hooks/useAlert';
 import { useEvents } from '@/hooks/useEvents';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useDrawer } from '@/contexts/DrawerContext';
 import { Colors, Typography, Spacing, Radius } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -32,6 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function EventsScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const { openDrawer } = useDrawer();
   const { hackathons, loading, addHackathon, updateHackathon, deleteHackathon, addRound, updateRound, deleteRound } = useEvents();
   const { showAlert } = useAlert();
 
@@ -95,13 +97,18 @@ export default function EventsScreen() {
       <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
 
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerLeft}>
           <Text style={[styles.title, { color: colors.text }]}>Events</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>{hackathons.length} tracked</Text>
         </View>
-        <Pressable style={[styles.addBtn, { backgroundColor: colors.accent }]} onPress={() => setHackModal(true)}>
-          <Plus size={22} color="#fff" strokeWidth={2.5} />
-        </Pressable>
+        <View style={styles.headerRight}>
+          <Pressable style={[styles.iconBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]} onPress={openDrawer}>
+            <Menu size={18} color={colors.textMuted} strokeWidth={2} />
+          </Pressable>
+          <Pressable style={[styles.addBtn, { backgroundColor: colors.accent }]} onPress={() => setHackModal(true)}>
+            <Plus size={22} color="#fff" strokeWidth={2.5} />
+          </Pressable>
+        </View>
       </View>
 
       {loading ? (
@@ -119,7 +126,7 @@ export default function EventsScreen() {
             const isExp = expandedId === h.id;
             const upcoming = isUpcoming(h);
             return (
-              <GlassCard key={h.id} style={[styles.hackCard, { backgroundColor: colors.surface, borderColor: colors.border }, !upcoming && { opacity: 0.65 }]} padding={0}>
+              <GlassCard key={h.id} style={[styles.hackCard, { backgroundColor: colors.surface, borderColor: colors.border, opacity: !upcoming ? 0.65 : 1 }]} padding={0}>
                 <Pressable style={styles.hackHeader} onPress={() => setExpandedId(isExp ? null : h.id)}>
                   <View style={[styles.statusIndicator, { backgroundColor: upcoming ? Colors.success : colors.textDim }]} />
                   <View style={styles.hackInfo}>
@@ -150,7 +157,7 @@ export default function EventsScreen() {
                     <Pressable hitSlop={8} onPress={() => openEditHackathon(h)}>
                       <Edit2 size={15} color={colors.textMuted} strokeWidth={2} />
                     </Pressable>
-                    <Pressable hitSlop={8} onPress={() => showAlert('Delete Event', `Delete "${h.name}"?`, [
+                    <Pressable hitSlop={8} onPress={() => Alert.alert('Delete Event', `Delete "${h.name}"?`, [
                       { text: 'Cancel', style: 'cancel' },
                       { text: 'Delete', style: 'destructive', onPress: () => deleteHackathon(h.id) },
                     ])}>
@@ -301,6 +308,9 @@ export default function EventsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  headerLeft: { flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  iconBtn: { width: 36, height: 36, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   title: { fontSize: Typography.sizes.xxl, fontWeight: Typography.weights.bold },
   subtitle: { fontSize: Typography.sizes.sm, marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },

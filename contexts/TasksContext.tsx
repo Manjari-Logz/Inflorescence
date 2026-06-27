@@ -1,9 +1,10 @@
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useAuth } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { tasksService, Task } from '@/services/tasksService';
 import { badgesService } from '@/services/badgesService';
 import { historyService, HistoryRecord } from '@/services/historyService';
+import { notificationsService } from '@/services/notificationsService';
 
 interface TasksContextType {
   tasks: Task[];
@@ -52,6 +53,24 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     const { data } = await tasksService.fetch(user.id);
     if (data) setTasks(data);
     setLoading(false);
+    
+    // Reschedule notifications for recurring tasks with reminders
+    // Only reschedule if notificationId is missing (prevents duplicate scheduling on app restart)
+    const hasPermission = await notificationsService.requestPermissions();
+    if (hasPermission && data) {
+      for (const task of data) {
+        if (task.repeatType === 'daily' && task.reminderEnabled && task.reminderTime && !task.notificationId) {
+          const notificationId = await notificationsService.scheduleDailyReminder(
+            task.id,
+            task.title,
+            task.reminderTime
+          );
+          if (notificationId) {
+            await tasksService.update(task.id, { notificationId });
+          }
+        }
+      }
+    }
   }, [user]);
 
   const loadHistory = useCallback(async () => {
@@ -82,6 +101,23 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     if (data) {
       setTasks(prev => prev.map(t => t.id === tempId ? data : t));
       await addNotification('Task Created', `You created a new task: ${input.title}`);
+      
+      // Schedule reminder if enabled for recurring task
+      if (data.repeatType === 'daily' && data.reminderEnabled && data.reminderTime) {
+        // Request notification permissions before scheduling
+        const hasPermission = await notificationsService.requestPermissions();
+        if (hasPermission) {
+          const notificationId = await notificationsService.scheduleDailyReminder(
+            data.id,
+            data.title,
+            data.reminderTime
+          );
+          if (notificationId) {
+            await tasksService.update(data.id, { notificationId });
+            setTasks(prev => prev.map(t => t.id === tempId ? { ...data, notificationId } : t));
+          }
+        }
+      }
     } else {
       setTasks(prev => prev.filter(t => t.id !== tempId));
     }
@@ -91,10 +127,50 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     // Optimistic update
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
     const { error } = await tasksService.update(id, updates);
-    if (error) await load(); // revert on error
+    if (error) {
+      await load(); // revert on error
+      return;
+    }
+
+    // Handle reminder scheduling for recurring tasks
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      const updatedTask = { ...task, ...updates };
+      
+      // Determine if notification should be scheduled
+      const shouldSchedule = updatedTask.repeatType === 'daily' && updatedTask.reminderEnabled && updatedTask.reminderTime;
+      const wasScheduled = task.repeatType === 'daily' && task.reminderEnabled && task.reminderTime;
+      const timeChanged = task.reminderTime !== updatedTask.reminderTime;
+      
+      // Cancel existing notification if conditions changed
+      if (task.notificationId && (!shouldSchedule || timeChanged)) {
+        await notificationsService.cancelNotificationById(task.notificationId);
+        await tasksService.update(id, { notificationId: undefined });
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, notificationId: undefined } : t));
+      }
+      
+      // Schedule new notification if needed
+      if (shouldSchedule && (!wasScheduled || timeChanged)) {
+        const notificationId = await notificationsService.scheduleDailyReminder(
+          id,
+          updatedTask.title,
+          updatedTask.reminderTime!
+        );
+        if (notificationId) {
+          await tasksService.update(id, { notificationId });
+          setTasks(prev => prev.map(t => t.id === id ? { ...t, notificationId } : t));
+        }
+      }
+    }
   };
 
   const removeTask = async (id: string) => {
+    // Cancel notification if task has one
+    const task = tasks.find(t => t.id === id);
+    if (task?.notificationId) {
+      await notificationsService.cancelNotificationById(task.notificationId);
+    }
+    
     setTasks(prev => prev.filter(t => t.id !== id));
     const { error } = await tasksService.remove(id);
     if (error) await load();
@@ -102,24 +178,34 @@ export function TasksProvider({ children }: { children: ReactNode }) {
 
   const completeTask = async (id: string): Promise<{ badge?: string; badgeName?: string } | null> => {
     if (!user) return null;
-    const completedAt = new Date().toISOString();
     
     // Find task details to store in history
     const task = tasks.find(t => t.id === id);
     if (!task) return null;
 
-    // Check duplicate history
-    const isDuplicate = history.some(h => h.task_id === id);
+    // Handle recurring tasks differently
+    const isRecurring = task.repeatType === 'daily';
+    const isCompletedForToday = tasksService.isCompletedForToday(task);
+    
+    // For recurring tasks, only add history if not already completed today
+    const shouldAddHistory = !isRecurring || !isCompletedForToday;
+    
+    // Check duplicate history for non-recurring tasks
+    const isDuplicate = !isRecurring && history.some(h => h.task_id === id);
 
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: true, completed_at: completedAt } : t));
-    const { error } = await tasksService.update(id, { completed: true, completed_at: completedAt });
+    // Use service helper to get proper completion updates
+    const completionUpdates = tasksService.completeForToday(task);
+    const completedAt = completionUpdates.completed_at || new Date().toISOString();
+
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...completionUpdates } : t));
+    const { error } = await tasksService.update(id, completionUpdates);
     if (error) {
       await load();
       return null;
     }
 
-    // Insert history record atomically/automatically
-    if (!isDuplicate) {
+    // Insert history record for non-recurring tasks or first completion of recurring task
+    if (shouldAddHistory && !isDuplicate) {
       const historyInput = {
         task_id: task.id,
         user_id: user.id,
@@ -147,11 +233,14 @@ export function TasksProvider({ children }: { children: ReactNode }) {
       await addNotification('Task Completed', `Great job! You completed: ${task.title}`);
     }
 
-    const completedCount = tasks.filter(t => t.completed).length + 1;
-    const result = await badgesService.checkAndAwardTaskBadge(user.id, completedCount);
-    if (result.awarded) {
-      const badgeName = 'name' in result ? result.name : result.type;
-      return { badge: result.type, badgeName };
+    // Only award badges for non-recurring tasks or first completion
+    if (!isRecurring || !isCompletedForToday) {
+      const completedCount = tasks.filter(t => t.completed).length + 1;
+      const result = await badgesService.checkAndAwardTaskBadge(user.id, completedCount);
+      if (result.awarded) {
+        const badgeName = 'name' in result ? result.name : result.type;
+        return { badge: result.type, badgeName };
+      }
     }
     return null;
   };
@@ -165,12 +254,20 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const task = tasks.find(t => t.id === id);
     
-    if (task && task.completed) {
-      // 1. Remove history record
+    if (task && tasksService.isCompletedForToday(task)) {
+      // For recurring tasks, just unmark today's completion
+      if (task.repeatType === 'daily') {
+        const uncompleteUpdates = tasksService.uncompleteForToday(task);
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...uncompleteUpdates, archived: false } : t));
+        const { error } = await tasksService.update(id, { ...uncompleteUpdates, archived: false });
+        if (error) await load();
+        return;
+      }
+      
+      // For non-recurring tasks, remove history and set incomplete
       await historyService.removeByTaskId(id);
       setHistory(prev => prev.filter(h => h.task_id !== id));
 
-      // 2. Set task as incomplete
       setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: false, completed_at: undefined, archived: false } : t));
       const { error } = await tasksService.update(id, { completed: false, completed_at: undefined, archived: false });
       if (error) await load();

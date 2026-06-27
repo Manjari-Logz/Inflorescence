@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Pressable, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Pressable, StatusBar, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth, useAlert } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
+import { useAlert } from '@/hooks/useAlert';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Typography, Spacing, Radius } from '@/constants/theme';
 import { AppInput } from '@/components/ui/AppInput';
@@ -20,7 +21,7 @@ export default function ForgotPasswordScreen() {
     if (!email.trim()) { showAlert('Email Required', 'Enter your email address.'); return; }
     const { error } = await resetPassword(email.trim());
     if (error) { showAlert('Error', error); return; }
-    showAlert('Check Your Email', 'A password reset link has been sent to your email.', [
+    Alert.alert('Check Your Email', 'A password reset link has been sent to your email.', [
       { text: 'OK', onPress: () => router.back() },
     ]);
   };
@@ -33,7 +34,7 @@ export default function ForgotPasswordScreen() {
           <Text style={[styles.backText, { color: colors.accent }]}>← Back to Sign In</Text>
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>Forgot Password</Text>
-        <Text style={[styles.sub, { color: colors.textMuted }]}>Enter your email and we'll send a reset link.</Text>
+        <Text style={[styles.sub, { color: colors.textMuted }]}>Enter your email and we&apos;ll send a reset link.</Text>
         <View style={[styles.card, { backgroundColor: colors.glass, borderColor: colors.border }]}>
           <AppInput label="Email" placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
           <PrimaryButton title="Send Reset Link" onPress={handleReset} loading={operationLoading} style={{ marginTop: Spacing.md }} />

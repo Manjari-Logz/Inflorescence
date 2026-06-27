@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface MoodEntry {
   id: string;
@@ -38,9 +38,8 @@ export const MOTIVATIONAL_QUOTES = [
 
 export const moodService = {
   async fetchTodayMood(userId: string) {
-    const client = getSupabaseClient();
     const today = new Date().toISOString().split('T')[0];
-    const { data } = await client
+    const { data } = await supabase
       .from('mood_entries')
       .select('*')
       .eq('user_id', userId)
@@ -50,8 +49,7 @@ export const moodService = {
   },
 
   async fetchRecentMoods(userId: string, limit = 7) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('mood_entries')
       .select('*')
       .eq('user_id', userId)
@@ -61,9 +59,8 @@ export const moodService = {
   },
 
   async setMood(userId: string, mood: string, score: number, notes?: string) {
-    const client = getSupabaseClient();
     const today = new Date().toISOString().split('T')[0];
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('mood_entries')
       .upsert({ user_id: userId, mood, mood_score: score, date: today, notes }, { onConflict: 'user_id,date' })
       .select()

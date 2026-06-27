@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface StudyDomain {
   id: string;
@@ -31,8 +31,7 @@ export interface StudyResource {
 
 export const studyService = {
   async fetchDomains(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('study_domains')
       .select('*, subjects:study_subjects(*, resources:study_resources(*))')
       .eq('user_id', userId)
@@ -41,20 +40,17 @@ export const studyService = {
   },
 
   async createDomain(input: { user_id: string; name: string; color: string }) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('study_domains').insert(input).select().single();
+    const { data, error } = await supabase.from('study_domains').insert(input).select().single();
     return { data: data as StudyDomain | null, error: error?.message ?? null };
   },
 
   async deleteDomain(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('study_domains').delete().eq('id', id);
+    const { error } = await supabase.from('study_domains').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async createSubject(input: { domain_id: string; user_id: string; name: string }) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('study_subjects')
       .insert({ ...input, study_hours: 0 })
       .select()
@@ -63,26 +59,22 @@ export const studyService = {
   },
 
   async updateSubjectHours(id: string, hours: number) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('study_subjects').update({ study_hours: hours }).eq('id', id);
+    const { error } = await supabase.from('study_subjects').update({ study_hours: hours }).eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async deleteSubject(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('study_subjects').delete().eq('id', id);
+    const { error } = await supabase.from('study_subjects').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 
   async createResource(input: { subject_id: string; user_id: string; type: string; title: string; url?: string }) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('study_resources').insert(input).select().single();
+    const { data, error } = await supabase.from('study_resources').insert(input).select().single();
     return { data: data as StudyResource | null, error: error?.message ?? null };
   },
 
   async deleteResource(id: string) {
-    const client = getSupabaseClient();
-    const { error } = await client.from('study_resources').delete().eq('id', id);
+    const { error } = await supabase.from('study_resources').delete().eq('id', id);
     return { error: error?.message ?? null };
   },
 };

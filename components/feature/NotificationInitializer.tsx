@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAuth } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
 import { useHabits } from '@/hooks/useHabits';
 import { useEvents } from '@/hooks/useEvents';

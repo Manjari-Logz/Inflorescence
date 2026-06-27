@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useAuth } from '@/template';
+import { useAuth } from '@/hooks/useAuth';
 import { placementService, PlacementCompany } from '@/services/placementService';
 
 interface PlacementContextType {

@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/template';
+import supabase from '@/lib/supabase';
 
 export interface Badge {
   id: string;
@@ -51,8 +51,7 @@ export const BADGE_IMAGES: Record<string, { gradient: [string, string]; icon: st
 
 export const badgesService = {
   async fetchBadges(userId: string) {
-    const client = getSupabaseClient();
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('badges')
       .select('*')
       .eq('user_id', userId)
@@ -61,14 +60,14 @@ export const badgesService = {
   },
 
   async awardBadge(input: Omit<Badge, 'id' | 'earned_at'>) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('badges').insert(input).select().single();
+    
+    const { data, error } = await supabase.from('badges').insert(input).select().single();
     return { data: data as Badge | null, error: error?.message ?? null };
   },
 
   async hasBadge(userId: string, type: string, module: string) {
-    const client = getSupabaseClient();
-    const { data } = await client.from('badges').select('id').eq('user_id', userId).eq('type', type).eq('module', module).maybeSingle();
+    
+    const { data } = await supabase.from('badges').select('id').eq('user_id', userId).eq('type', type).eq('module', module).maybeSingle();
     return !!data;
   },
 

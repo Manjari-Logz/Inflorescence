@@ -4,10 +4,12 @@ import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Home, CheckSquare, TrendingUp, Compass, User,
-  Plus, X, BookOpen, Dumbbell, Trophy, Layers, ListTodo, Wallet, Target, Flame, Timer,
+  Plus, X, BookOpen, Dumbbell, Trophy, Layers, ListTodo, Wallet, Target, Flame, Timer, Menu,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Spacing, Radius, Typography } from '@/constants/theme';
+import { SidebarDrawer } from '@/components/ui/SidebarDrawer';
+import { useDrawer } from '@/contexts/DrawerContext';
 
 function TabIcon({ icon: Icon, color, size }: { icon: any; color: string; size: number }) {
   return <Icon size={size} color={color} strokeWidth={2} />;
@@ -17,6 +19,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const router = useRouter();
+  const { isDrawerOpen, openDrawer, closeDrawer } = useDrawer();
   const [fabOpen, setFabOpen] = useState(false);
 
   const tabBarHeight = Platform.select({ ios: insets.bottom + 56, android: insets.bottom + 56, default: 64 });
@@ -140,6 +143,9 @@ export default function TabLayout() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Sidebar Drawer */}
+      <SidebarDrawer visible={isDrawerOpen} onClose={closeDrawer} />
     </>
   );
 }

@@ -5,10 +5,11 @@ import {
 } from 'react-native';
 import {
   CheckCircle2, Circle, Clock, Trash2, Edit2, Archive, RotateCcw,
-  ChevronDown, ChevronUp, AlertCircle, Hourglass, FileText,
+  ChevronDown, ChevronUp, AlertCircle, Hourglass, FileText, RefreshCw,
 } from 'lucide-react-native';
 import { Spacing, Radius } from '@/constants/theme';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { tasksService } from '@/services/tasksService';
 
 const isNewArch = !!((global as any).RN$Bridgeless || (global as any).nativeFabricUIScheduler);
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental && !isNewArch) {
@@ -51,14 +52,14 @@ function TaskCardComponent({
         return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 5;
       },
       onPanResponderMove: (_, gestureState) => {
-        if (task.completed && gestureState.dx > 0) {
+        if (isCompletedForToday && gestureState.dx > 0) {
           pan.setValue({ x: gestureState.dx * 0.2, y: 0 });
         } else {
           pan.setValue({ x: gestureState.dx, y: 0 });
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (!task.completed && gestureState.dx > SWIPE_THRESHOLD) {
+        if (!isCompletedForToday && gestureState.dx > SWIPE_THRESHOLD) {
           Animated.timing(pan, {
             toValue: { x: SCREEN_WIDTH, y: 0 },
             duration: 200,
@@ -114,8 +115,12 @@ function TaskCardComponent({
     }).start();
   };
 
+  // Check if task is completed for today (handles recurring tasks)
+  const isCompletedForToday = tasksService.isCompletedForToday(task);
+  const isRecurring = task.repeatType === 'daily';
+
   const pColor = PRIORITY_COLORS[task.priority] ?? colors.accent;
-  const overdue = task.deadline && new Date(task.deadline) < new Date() && !task.completed;
+  const overdue = task.deadline && new Date(task.deadline) < new Date() && !isCompletedForToday;
 
   const renderBackgrounds = () => {
     const translateX = pan.x;
@@ -167,7 +172,7 @@ function TaskCardComponent({
           styles.card,
           {
             backgroundColor: 'rgba(255, 255, 255, 0.03)',
-            borderColor: task.completed ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+            borderColor: isCompletedForToday ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 255, 255, 0.08)',
             transform: [{ translateX: pan.x }, { scale: cardScale }],
           },
         ]}
@@ -181,11 +186,11 @@ function TaskCardComponent({
         >
           <View style={styles.cardHeader}>
             <Pressable
-              onPress={() => !task.completed && onComplete(task.id)}
+              onPress={() => !isCompletedForToday && onComplete(task.id)}
               style={styles.checkbox}
               hitSlop={12}
             >
-              {task.completed ? (
+              {isCompletedForToday ? (
                 <View style={styles.checkedContainer}>
                   <CheckCircle2 size={22} color="#4CAF50" strokeWidth={2.5} />
                 </View>
@@ -200,8 +205,8 @@ function TaskCardComponent({
               <Text
                 style={[
                   styles.title,
-                  { color: task.completed ? colors.textMuted : colors.text },
-                  task.completed && styles.strikethrough,
+                  { color: isCompletedForToday ? colors.textMuted : colors.text },
+                  isCompletedForToday && styles.strikethrough,
                 ]}
                 numberOfLines={expanded ? undefined : 1}
               >
@@ -226,6 +231,12 @@ function TaskCardComponent({
 
           {!expanded && (
             <View style={styles.badgeRow}>
+              {isRecurring && (
+                <View style={[styles.badge, { borderColor: 'rgba(122, 162, 227, 0.3)', backgroundColor: 'rgba(122, 162, 227, 0.1)' }]}>
+                  <RefreshCw size={11} color={colors.accent} />
+                  <Text style={[styles.badgeText, { color: colors.accent }]}>Daily</Text>
+                </View>
+              )}
               {task.deadline && (
                 <View style={[styles.badge, overdue && styles.overdueBadge, { borderColor: 'rgba(255, 255, 255, 0.05)' }]}>
                   <Clock size={11} color={overdue ? colors.error : colors.textMuted} />
@@ -303,7 +314,7 @@ function TaskCardComponent({
               ) : null}
 
               <View style={[styles.actionRow, { borderTopColor: 'rgba(255, 255, 255, 0.06)' }]}>
-                {!task.completed && (
+                {!isCompletedForToday && (
                   <Pressable
                     style={[styles.actionButton, { backgroundColor: 'rgba(255, 255, 255, 0.04)' }]}
                     onPress={() => onEdit(task)}
