@@ -50,7 +50,7 @@ export function CustomSectionsProvider({ children }: { children: ReactNode }) {
     }
     if (data) {
       console.log('[CustomSectionsContext] Section added successfully:', data.id);
-      setSections(prev => [...prev, { ...data, items: [] }]);
+      await load();
       await addNotification('Custom Section Created', `Section "${name}" has been created successfully.`);
     }
   };
@@ -63,7 +63,7 @@ export function CustomSectionsProvider({ children }: { children: ReactNode }) {
       throw new Error(error);
     }
     console.log('[CustomSectionsContext] Section updated successfully');
-    setSections(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    await load();
   };
 
   const removeSection = async (id: string) => {
@@ -75,7 +75,7 @@ export function CustomSectionsProvider({ children }: { children: ReactNode }) {
       throw new Error(error);
     }
     console.log('[CustomSectionsContext] Section removed successfully');
-    setSections(prev => prev.filter(s => s.id !== id));
+    await load();
     if (section) {
       await addNotification('Custom Section Deleted', `Section "${section.name}" has been deleted.`);
     }

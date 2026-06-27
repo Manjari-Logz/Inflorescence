@@ -25,64 +25,86 @@ export interface CustomItem {
 
 export const customSectionsService = {
   async fetchSections(userId: string) {
+    console.log('[customSectionsService] Fetching sections for user:', userId);
     const { data, error } = await supabase
       .from('custom_sections')
-      .select('*, items:custom_items(*)')
+      .select('id, user_id, name, color, icon, created_at, items:custom_items(*)')
       .eq('user_id', userId)
-      .order('order', { ascending: true })
       .order('created_at', { ascending: false });
-    return { data: data as CustomSection[] | null, error: error?.message ?? null };
+
+    if (error) {
+      console.error('[customSectionsService] Fetch sections failed. Full error:', error);
+      return { data: null, error: error.message };
+    }
+    return { data: data as CustomSection[] | null, error: null };
   },
 
   async createSection(input: Omit<CustomSection, 'id' | 'created_at' | 'items' | 'order'>) {
-    
-    
     console.log('[customSectionsService] Creating section with input:', input);
     
     // Check for duplicate names
-    const { data: existing, error: existingError } = await supabase
+    const { data: existing, error: dupError } = await supabase
       .from('custom_sections')
       .select('id')
       .eq('user_id', input.user_id)
       .eq('name', input.name)
-      .single();
+      .limit(1);
+
+    if (dupError) {
+      console.warn('[customSectionsService] Duplicate check warning. Full error:', dupError);
+    }
     
-    if (existing) {
+    if (existing && existing.length > 0) {
       console.error('[customSectionsService] Duplicate section name:', input.name);
       return { data: null, error: 'A section with this name already exists' };
     }
     
-    // Get the highest order number for this user
-    const { data: maxOrderData, error: orderError } = await supabase
+    // Insert first without returning columns to avoid postgrest schema cache validation issues
+    const { error: insertError } = await supabase
       .from('custom_sections')
-      .select('order')
+      .insert(input);
+    
+    if (insertError) {
+      console.error('[customSectionsService] Insert section failed. Full error:', insertError);
+      return { data: null, error: insertError.message };
+    }
+
+    // Select the newly created section explicitly specifying known valid fields
+    const { data, error: selectError } = await supabase
+      .from('custom_sections')
+      .select('id, user_id, name, color, icon, created_at')
       .eq('user_id', input.user_id)
-      .order('order', { ascending: false })
+      .eq('name', input.name)
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
-    
-    const nextOrder = maxOrderData?.order ? maxOrderData.order + 1 : 0;
-    
-    const insertData = { ...input, order: nextOrder };
-    
-    const { data, error } = await supabase
-      .from('custom_sections')
-      .insert(insertData)
-      .select()
-      .single();
-    
-    return { data: data as CustomSection | null, error: error?.message ?? null };
+
+    if (selectError) {
+      console.error('[customSectionsService] Select after insert failed. Full error:', selectError);
+      return { data: null, error: selectError.message };
+    }
+
+    console.log('[customSectionsService] Section created successfully:', data);
+    return { data: data as CustomSection | null, error: null };
   },
 
   async updateSection(id: string, updates: Partial<CustomSection>) {
-    
-    const { error } = await supabase.from('custom_sections').update(updates).eq('id', id);
+    console.log('[customSectionsService] Updating section:', id, updates);
+    // Strip order field updates if passing through to avoid schema cache validation
+    const { order, ...allowedUpdates } = updates;
+    const { error } = await supabase.from('custom_sections').update(allowedUpdates).eq('id', id);
+    if (error) {
+      console.error('[customSectionsService] Update section failed. Full error:', error);
+    }
     return { error: error?.message ?? null };
   },
 
   async removeSection(id: string) {
-    
+    console.log('[customSectionsService] Removing section:', id);
     const { error } = await supabase.from('custom_sections').delete().eq('id', id);
+    if (error) {
+      console.error('[customSectionsService] Remove section failed. Full error:', error);
+    }
     return { error: error?.message ?? null };
   },
 

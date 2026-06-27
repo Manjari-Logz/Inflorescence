@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { View, Pressable, StyleSheet, Modal, Text, Platform } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import {
   Home, CheckSquare, TrendingUp, User,
-  Plus, X, BookOpen, Dumbbell, Trophy, Layers, ListTodo, Wallet, Flame, Timer,
+  Plus, X, BookOpen, Dumbbell, Trophy, Layers, ListTodo, Wallet, Flame, Timer, Calendar,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { Spacing, Radius, Typography } from '@/constants/theme';
@@ -22,8 +24,6 @@ export default function TabLayout() {
   const { isDrawerOpen, closeDrawer } = useDrawer();
   const [fabOpen, setFabOpen] = useState(false);
 
-  const tabBarHeight = Platform.select({ ios: insets.bottom + 56, android: insets.bottom + 56, default: 64 });
-
   const fabActions = [
     { label: 'Add Task', icon: ListTodo, route: '/(tabs)/tasks', color: colors.accent },
     { label: 'Add Book', icon: BookOpen, route: '/modules/books', color: '#8B5CF6' },
@@ -38,23 +38,44 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
+          tabBarBackground: () => (
+            <BlurView
+              intensity={Platform.OS === 'ios' ? 80 : 100}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
+          ),
           tabBarStyle: {
-            backgroundColor: colors.tabBar,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            height: tabBarHeight,
-            paddingTop: 6,
-            paddingBottom: Platform.select({ ios: insets.bottom + 4, android: insets.bottom + 4, default: 8 }),
-            paddingHorizontal: 4,
+            position: 'absolute',
+            bottom: Platform.OS === 'ios' ? 24 : 16,
+            left: 16,
+            right: 16,
+            backgroundColor: Platform.OS === 'ios' ? 'rgba(0, 11, 41, 0.5)' : 'rgba(0, 11, 41, 0.92)',
+            borderWidth: 1,
+            borderColor: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: 32,
+            height: 64,
+            paddingBottom: 0,
+            paddingTop: 0,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.3,
+            shadowRadius: 16,
+            elevation: 8,
+            overflow: 'hidden',
           },
           tabBarActiveTintColor: colors.accent,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarLabelStyle: {
-            fontSize: 10,
+            fontSize: 9,
             fontWeight: '600',
-            marginTop: 2,
+            marginTop: 0,
+            marginBottom: 8,
           },
-          tabBarItemStyle: { paddingVertical: 2 },
+          tabBarItemStyle: {
+            height: 64,
+            paddingTop: 10,
+          },
         }}
       >
         <Tabs.Screen
@@ -72,39 +93,17 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="study"
+          name="calendar"
           options={{
-            title: '',
-            tabBarIcon: () => <View style={styles.fabPlaceholder} />,
-            tabBarButton: () => (
-              <Pressable
-                style={[styles.fabBtn, { backgroundColor: colors.accent }]}
-                onPress={() => setFabOpen(true)}
-              >
-                <Plus size={26} color="#fff" strokeWidth={2.5} />
-              </Pressable>
-            ),
+            title: 'Calendar',
+            tabBarIcon: ({ color, size }) => <TabIcon icon={Calendar} color={color} size={size} />,
           }}
         />
         <Tabs.Screen
-          name="goals"
+          name="analytics"
           options={{
-            title: 'Progress',
+            title: 'Analytics',
             tabBarIcon: ({ color, size }) => <TabIcon icon={TrendingUp} color={color} size={size} />,
-          }}
-        />
-        <Tabs.Screen
-          name="habits"
-          options={{
-            title: 'Habits',
-            tabBarIcon: ({ color, size }) => <TabIcon icon={Flame} color={color} size={size} />,
-          }}
-        />
-        <Tabs.Screen
-          name="focus"
-          options={{
-            title: 'Focus',
-            tabBarIcon: ({ color, size }) => <TabIcon icon={Timer} color={color} size={size} />,
           }}
         />
         <Tabs.Screen
@@ -115,18 +114,26 @@ export default function TabLayout() {
           }}
         />
         {/* Hidden tabs accessible via navigation */}
+        <Tabs.Screen name="study" options={{ href: null }} />
+        <Tabs.Screen name="goals" options={{ href: null }} />
+        <Tabs.Screen name="habits" options={{ href: null }} />
+        <Tabs.Screen name="focus" options={{ href: null }} />
         <Tabs.Screen name="events" options={{ href: null }} />
       </Tabs>
 
       {/* FAB Modal */}
       <Modal visible={fabOpen} transparent animationType="fade" onRequestClose={() => setFabOpen(false)}>
-        <Pressable style={styles.fabOverlay} onPress={() => setFabOpen(false)}>
-          <View style={[styles.fabMenu, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: tabBarHeight + 8 }]}>
+        <Pressable style={styles.fabOverlay} onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setFabOpen(false);
+        }}>
+          <View style={[styles.fabMenu, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 96 }]}>
             {fabActions.map((action, idx) => (
               <Pressable
                 key={idx}
                 style={({ pressed }) => [styles.fabAction, pressed && { opacity: 0.7 }]}
                 onPress={() => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   setFabOpen(false);
                   router.push(action.route as any);
                 }}
@@ -138,7 +145,10 @@ export default function TabLayout() {
               </Pressable>
             ))}
           </View>
-          <Pressable style={[styles.fabClose, { backgroundColor: colors.error }]} onPress={() => setFabOpen(false)}>
+          <Pressable style={[styles.fabClose, { backgroundColor: colors.error }]} onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setFabOpen(false);
+          }}>
             <X size={22} color="#fff" strokeWidth={2.5} />
           </Pressable>
         </Pressable>

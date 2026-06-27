@@ -4,11 +4,13 @@ import {
   KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
   TextInput, useWindowDimensions, Animated, FlatList, Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Plus, Search, CheckCircle2, Circle, Clock, Bell,
   Trash2, CheckSquare, X, Edit2, Archive, RotateCcw,
-  Menu, Folder, Inbox, ChevronRight, Sparkles, Award, Flame, Zap, BarChart2, AlertCircle
+  Menu, Folder, Inbox, ChevronRight, Sparkles, Award, Flame, Zap, BarChart2, AlertCircle, SlidersHorizontal
 } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useAlert } from '@/hooks/useAlert';
@@ -17,10 +19,13 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import { useDrawer } from '@/contexts/DrawerContext';
 import { useCustomSections } from '@/hooks/useModules';
 import { useBadges } from '@/hooks/useBadges';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useSafeTabBarHeight } from '@/hooks/useSafeTabBarHeight';
 import { Spacing, Radius, Typography } from '@/constants/theme';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { AppInput } from '@/components/ui/AppInput';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Supporting Redesign Components
@@ -56,7 +61,9 @@ const PRODUCTIVITY_QUOTES = [
 ];
 
 export default function TasksScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useSafeTabBarHeight();
   const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
@@ -67,6 +74,8 @@ export default function TasksScreen() {
   const { sections: customSections } = useCustomSections();
   const { badges } = useBadges();
   const { showAlert } = useAlert();
+  const { notifications, unreadCount, markRead, deleteNotification, clearAll } = useNotifications();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // Filter & Search states
   const [activeFilterId, setActiveFilterId] = useState('all');
@@ -94,6 +103,8 @@ export default function TasksScreen() {
   const [repeatType, setRepeatType] = useState<'none' | 'daily'>('none');
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState('08:00');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   // Mobile Drawer State
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -358,12 +369,6 @@ export default function TasksScreen() {
       {/* 1. Glassmorphic Header Card */}
       <View style={styles.headerCard}>
         <View style={styles.headerTop}>
-          <Pressable
-            style={[styles.menuBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
-            onPress={openDrawer}
-          >
-            <Menu size={18} color={colors.textMuted} strokeWidth={2} />
-          </Pressable>
           <View style={styles.greetingCol}>
             <Text style={[styles.greetingText, { color: colors.textSecondary }]}>
               Hello, {user?.username || 'Explorer'}
@@ -434,43 +439,26 @@ export default function TasksScreen() {
         </View>
       </View>
 
-      {/* 2. Task Analytics Cards */}
-      <View style={styles.analyticsSection}>
-        <View style={styles.analyticsGrid}>
-          <View style={styles.analyticsCard}>
-            <Text style={[styles.analyticsNum, { color: '#FFB74D' }]}>{todayTasksCount}</Text>
-            <Text style={[styles.analyticsLabel, { color: colors.textMuted }]}>Today</Text>
-          </View>
-          <View style={styles.analyticsCard}>
-            <Text style={[styles.analyticsNum, { color: colors.accent }]}>{totalActive}</Text>
-            <Text style={[styles.analyticsLabel, { color: colors.textMuted }]}>Pending</Text>
-          </View>
-          <View style={styles.analyticsCard}>
-            <Text style={[styles.analyticsNum, { color: '#4CAF50' }]}>{completedCount}</Text>
-            <Text style={[styles.analyticsLabel, { color: colors.textMuted }]}>Completed</Text>
-          </View>
-          <View style={[styles.analyticsCard, overdueCount > 0 && styles.overdueAnalyticsCard]}>
-            <Text style={[styles.analyticsNum, { color: overdueCount > 0 ? '#EF5350' : colors.textMuted }]}>{overdueCount}</Text>
-            <Text style={[styles.analyticsLabel, { color: colors.textMuted }]}>Overdue</Text>
-          </View>
-        </View>
-
-        {/* Featured Weekly Productivity Card */}
-        <View style={styles.weeklyProductivityCard}>
-          <LinearGradient
-            colors={['rgba(122, 162, 227, 0.1)', 'rgba(122, 162, 227, 0.02)']}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <View style={styles.weeklyProductivityHeader}>
-            <BarChart2 size={16} color={colors.accent} />
-            <Text style={[styles.weeklyProductivityTitle, { color: colors.text }]}>Weekly Completion Card</Text>
-          </View>
-          <Text style={[styles.weeklyProductivityText, { color: colors.textSecondary }]}>
-            {productivityScore >= 80 
-              ? "Exemplary focus! You are achieving your milestones efficiently."
-              : "Consistency is key. Clear small pending actions to boost daily performance."}
-          </Text>
-        </View>
+      {/* 2. Horizontally Scrollable Compact Summary Cards */}
+      <View style={styles.premiumSummaryContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.premiumSummaryScroll}>
+          <GlassCard style={[styles.premiumSummaryCard, { borderColor: 'rgba(96, 165, 250, 0.2)' }]} padding={12}>
+            <Text style={[styles.premiumSummaryNum, { color: '#60A5FA' }]}>{totalActive}</Text>
+            <Text style={styles.premiumSummaryLabel}>Pending</Text>
+          </GlassCard>
+          <GlassCard style={[styles.premiumSummaryCard, { borderColor: 'rgba(52, 211, 153, 0.2)' }]} padding={12}>
+            <Text style={[styles.premiumSummaryNum, { color: '#34D399' }]}>{completedCount}</Text>
+            <Text style={styles.premiumSummaryLabel}>Completed</Text>
+          </GlassCard>
+          <GlassCard style={[styles.premiumSummaryCard, { borderColor: 'rgba(239, 83, 80, 0.2)' }]} padding={12}>
+            <Text style={[styles.premiumSummaryNum, { color: '#EF5350' }]}>{overdueCount}</Text>
+            <Text style={styles.premiumSummaryLabel}>Overdue</Text>
+          </GlassCard>
+          <GlassCard style={[styles.premiumSummaryCard, { borderColor: 'rgba(255, 183, 77, 0.2)' }]} padding={12}>
+            <Text style={[styles.premiumSummaryNum, { color: '#FFB74D' }]}>{todayTasksCount}</Text>
+            <Text style={styles.premiumSummaryLabel}>Today's Tasks</Text>
+          </GlassCard>
+        </ScrollView>
       </View>
 
       {/* 3. Gamification System Card */}
@@ -519,55 +507,6 @@ export default function TasksScreen() {
           </View>
         )}
       </View>
-
-      {/* 4. Smart Filters & Search */}
-      <View style={styles.filterSection}>
-        {!isLargeScreen && (
-          <View style={styles.menuRow}>
-            <Pressable onPress={() => setDrawerOpen(true)} style={[styles.menuButton, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]} hitSlop={12}>
-              <Menu size={20} color={colors.text} />
-            </Pressable>
-            <Text style={[styles.pageHeading, { color: colors.text }]}>Task Board</Text>
-          </View>
-        )}
-
-        <View style={styles.searchBar}>
-          <Search size={16} color={colors.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search and explore tasks..."
-            placeholderTextColor={colors.textDim}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
-              <X size={16} color={colors.textMuted} />
-            </Pressable>
-          )}
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
-          {FILTER_CHIPS.map(chip => {
-            const isSelected = activeFilterId === chip.id;
-            return (
-              <Pressable
-                key={chip.id}
-                style={[
-                  styles.chip,
-                  { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
-                  isSelected && { borderColor: colors.accent, backgroundColor: 'rgba(122, 162, 227, 0.15)' }
-                ]}
-                onPress={() => setActiveFilterId(chip.id)}
-              >
-                <Text style={[styles.chipText, { color: isSelected ? colors.accent : colors.textMuted }]}>
-                  {chip.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
     </View>
   );
 
@@ -606,7 +545,76 @@ export default function TasksScreen() {
       end={{ x: 1, y: 1 }}
       style={styles.root}
     >
-      <View style={[styles.contentContainer, { paddingTop: insets.top }]}>
+      <View style={[styles.premiumTasksHeader, { paddingTop: insets.top + 12 }]}>
+        {/* Row 1 */}
+        <View style={styles.headerFirstRow}>
+          <Pressable
+            style={({ pressed }) => [styles.headerIconBtn, pressed && { opacity: 0.7 }]}
+            onPress={openDrawer}
+          >
+            <Menu size={24} color="#FFFFFF" strokeWidth={2.5} />
+          </Pressable>
+          
+          <Text style={styles.tasksHeaderTitle}>Tasks</Text>
+
+          <Pressable
+            style={({ pressed }) => [styles.headerIconBtn, pressed && { opacity: 0.7 }]}
+            onPress={() => setNotificationsOpen(true)}
+          >
+            <Bell size={22} color="#FFFFFF" strokeWidth={2} />
+            {unreadCount > 0 && (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{unreadCount}</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
+
+        {/* Row 2 */}
+        <View style={styles.headerSecondRow}>
+          <View style={styles.premiumSearchWrapper}>
+            <Search size={18} color="#94A3B8" style={{ marginRight: 8 }} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search tasks..."
+              placeholderTextColor="#64748B"
+              style={{ flex: 1, color: '#FFFFFF', fontSize: 14, padding: 0 }}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+                <X size={16} color="#94A3B8" />
+              </Pressable>
+            )}
+          </View>
+          <Pressable style={styles.filterToggleBtn}>
+            <SlidersHorizontal size={18} color="#FFFFFF" />
+          </Pressable>
+        </View>
+
+        {/* Row 3: Quick Filter Chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.premiumChipsScroll}>
+          {FILTER_CHIPS.map(chip => {
+            const isSelected = activeFilterId === chip.id;
+            return (
+              <Pressable
+                key={chip.id}
+                style={[
+                  styles.premiumChip,
+                  isSelected && { borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.15)' }
+                ]}
+                onPress={() => setActiveFilterId(chip.id)}
+              >
+                <Text style={[styles.premiumChipText, { color: isSelected ? '#3B82F6' : '#94A3B8' }]}>
+                  {chip.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <View style={styles.contentContainer}>
         <StatusBar barStyle="light-content" />
 
         <View style={styles.mainLayout}>
@@ -640,7 +648,7 @@ export default function TasksScreen() {
               ListHeaderComponent={renderListHeader}
               ListEmptyComponent={renderListEmpty}
               ListFooterComponent={renderListFooter}
-              contentContainerStyle={styles.scrollContent}
+              contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + 24 }]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               initialNumToRender={8}
@@ -767,35 +775,39 @@ export default function TasksScreen() {
                   numberOfLines={2}
                 />
 
-                {/* Calendar Date Row Helper */}
-                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Due Date Calendar Helper</Text>
-                <View style={styles.calendarHelperRow}>
-                  <Pressable
-                    style={[styles.calendarHelperBtn, deadline === today.toISOString().split('T')[0] && { backgroundColor: colors.accent }]}
-                    onPress={() => setDeadline(today.toISOString().split('T')[0])}
-                  >
-                    <Text style={[styles.calendarHelperText, { color: deadline === today.toISOString().split('T')[0] ? '#fff' : colors.text }]}>Today</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.calendarHelperBtn, deadline === new Date(Date.now() + 86400000).toISOString().split('T')[0] && { backgroundColor: colors.accent }]}
-                    onPress={() => setDeadline(new Date(Date.now() + 86400000).toISOString().split('T')[0])}
-                  >
-                    <Text style={[styles.calendarHelperText, { color: deadline === new Date(Date.now() + 86400000).toISOString().split('T')[0] ? '#fff' : colors.text }]}>Tomorrow</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.calendarHelperBtn, deadline === '' && { backgroundColor: colors.accent }]}
-                    onPress={() => setDeadline('')}
-                  >
-                    <Text style={[styles.calendarHelperText, { color: deadline === '' ? '#fff' : colors.text }]}>None</Text>
-                  </Pressable>
-                </View>
-
-                <AppInput
-                  label="Specific Deadline (YYYY-MM-DD)"
-                  placeholder="e.g. 2026-12-31"
-                  value={deadline}
-                  onChangeText={setDeadline}
-                />
+                {/* Calendar Date Picker */}
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Due Date</Text>
+                <Pressable
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    borderRadius: Radius.md,
+                    padding: Spacing.md,
+                    marginBottom: Spacing.md,
+                    justifyContent: 'center',
+                  }}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={{ color: deadline ? '#FFFFFF' : '#94A3B8', fontSize: 14 }}>
+                    {deadline ? new Date(deadline).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Select Date...'}
+                  </Text>
+                </Pressable>
+                
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={deadline ? new Date(deadline) : new Date()}
+                    mode="date"
+                    display="default"
+                    themeVariant="dark"
+                    onChange={(event, selectedDate) => {
+                      setShowDatePicker(false);
+                      if (selectedDate) {
+                        setDeadline(selectedDate.toISOString().split('T')[0]);
+                      }
+                    }}
+                  />
+                )}
 
                 <AppInput
                   label="Allocated Estimated Duration (mins)"
@@ -936,19 +948,38 @@ export default function TasksScreen() {
                     {reminderEnabled && (
                       <>
                         <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Reminder Time</Text>
-                        <View style={styles.timePickerRow}>
-                          <TextInput
-                            style={[styles.timePickerInput, { color: colors.text, borderColor: 'rgba(255, 255, 255, 0.08)' }]}
-                            value={reminderTime}
-                            onChangeText={setReminderTime}
-                            placeholder="08:00"
-                            placeholderTextColor={colors.textDim}
-                            maxLength={5}
+                        <Pressable
+                          style={{
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            borderRadius: Radius.md,
+                            padding: Spacing.md,
+                            marginBottom: Spacing.md,
+                            justifyContent: 'center',
+                          }}
+                          onPress={() => setShowTimePicker(true)}
+                        >
+                          <Text style={{ color: '#FFFFFF', fontSize: 14 }}>{reminderTime}</Text>
+                        </Pressable>
+                        
+                        {showTimePicker && (
+                          <DateTimePicker
+                            value={new Date(`2026-01-01T${reminderTime}:00`)}
+                            mode="time"
+                            display="default"
+                            is24Hour={true}
+                            themeVariant="dark"
+                            onChange={(event, selectedTime) => {
+                              setShowTimePicker(false);
+                              if (selectedTime) {
+                                const hours = String(selectedTime.getHours()).padStart(2, '0');
+                                const minutes = String(selectedTime.getMinutes()).padStart(2, '0');
+                                setReminderTime(`${hours}:${minutes}`);
+                              }
+                            }}
                           />
-                          <Text style={[styles.timePickerHelper, { color: colors.textMuted }]}>
-                            Format: HH:MM (24-hour)
-                          </Text>
-                        </View>
+                        )}
                       </>
                     )}
                   </>
@@ -963,6 +994,59 @@ export default function TasksScreen() {
             </View>
           </KeyboardAvoidingView>
         </Modal>
+
+        {/* Notifications Modal */}
+        <Modal visible={notificationsOpen} animationType="slide" transparent onRequestClose={() => setNotificationsOpen(false)}>
+          <View style={styles.modalOverlay}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setNotificationsOpen(false)} />
+            <View style={[styles.modalSheet, { height: '75%', backgroundColor: '#091535', borderColor: 'rgba(255,255,255,0.08)' }]}>
+              <View style={styles.modalHandle} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFFFFF' }}>Notifications</Text>
+                <Pressable onPress={() => { clearAll(); }}>
+                  <Text style={{ fontSize: 13, color: '#EF4444', fontWeight: '600' }}>Clear All</Text>
+                </Pressable>
+              </View>
+
+              {notifications.length === 0 ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                  <Bell size={32} color="#64748B" />
+                  <Text style={{ color: '#64748B', fontSize: 14 }}>All caught up!</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={notifications}
+                  keyExtractor={(item) => item.id}
+                  showsVerticalScrollIndicator={false}
+                  renderItem={({ item }) => (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' }}>
+                      <Pressable
+                        style={{ flex: 1, gap: 4 }}
+                        onPress={async () => {
+                          await markRead(item.id);
+                          setNotificationsOpen(false);
+                          if (item.title.toLowerCase().includes('task')) router.push('/(tabs)/tasks');
+                          else if (item.title.toLowerCase().includes('goal')) router.push('/(tabs)/goals');
+                          else if (item.title.toLowerCase().includes('book')) router.push('/modules/books');
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          {!item.is_read && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3B82F6' }} />}
+                          <Text style={{ color: item.is_read ? '#94A3B8' : '#FFFFFF', fontWeight: item.is_read ? '500' : '700', fontSize: 14 }}>{item.title}</Text>
+                        </View>
+                        {item.body && <Text style={{ color: '#64748B', fontSize: 12 }}>{item.body}</Text>}
+                      </Pressable>
+                      <Pressable onPress={() => deleteNotification(item.id)} style={{ padding: 4 }}>
+                        <Trash2 size={16} color="#EF4444" style={{ marginTop: 2 }} />
+                      </Pressable>
+                    </View>
+                  )}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
+
       </View>
     </LinearGradient>
   );
@@ -970,6 +1054,132 @@ export default function TasksScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  // Premium Glass Top Header Bar
+  premiumTasksHeader: {
+    backgroundColor: 'rgba(0, 11, 41, 0.75)',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+    gap: 12,
+  },
+  headerFirstRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tasksHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  headerIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  headerSecondRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  premiumSearchWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    height: 40,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  filterToggleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  premiumChipsScroll: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  premiumChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  premiumChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  premiumSummaryContainer: {
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  premiumSummaryScroll: {
+    paddingHorizontal: Spacing.base,
+    gap: 8,
+  },
+  premiumSummaryCard: {
+    width: 105,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderWidth: 1,
+  },
+  premiumSummaryNum: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  premiumSummaryLabel: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  bellBadgeText: {
+    fontSize: 9,
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  modalSheet: {
+    borderTopLeftRadius: Radius.xxl,
+    borderTopRightRadius: Radius.xxl,
+    borderWidth: 1,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
+  modalHandle: { width: 36, height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.base },
   contentContainer: { flex: 1 },
   mainLayout: { flex: 1, flexDirection: 'row' },
   

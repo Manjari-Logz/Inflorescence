@@ -46,21 +46,17 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, route: '/(tabs)/' },
-  { label: 'Study Chamber', icon: BookOpen, route: '/(tabs)/study' },
-  { label: 'Events & Hackathons', icon: CalendarDays, route: '/(tabs)/events' },
   { label: 'Tasks', icon: CheckCircle2, route: '/(tabs)/tasks' },
   { label: 'Goals', icon: Flag, route: '/(tabs)/goals' },
+  { label: 'Study Chamber', icon: BookOpen, route: '/(tabs)/study' },
+  { label: 'Analytics', icon: TrendingUp, route: '/(tabs)/analytics' },
+  { label: 'Calendar', icon: CalendarDays, route: '/(tabs)/calendar' },
+  { label: 'Custom Sections', icon: LayoutGrid, route: '/modules/custom-sections' },
   { label: 'Books', icon: Book, route: '/modules/books' },
-  { label: 'Podcasts', icon: Headphones, route: '/modules/podcasts' },
-  { label: 'Placement Drive', icon: Briefcase, route: '/modules/placement' },
-  { label: 'Exercise', icon: Activity, route: '/modules/exercise' },
+  { label: 'Exercise logs', icon: Activity, route: '/modules/exercise' },
   { label: 'Money Vault', icon: Wallet, route: '/modules/money-vault' },
   { label: 'Daily Reflection', icon: Edit3, route: '/modules/reflection' },
-  { label: 'Analytics', icon: TrendingUp, route: '/modules/analytics' },
-  { label: 'Badge Collection', icon: Award, route: '/modules/badges' },
-  { label: 'Custom Sections', icon: LayoutGrid, route: '/modules/custom-sections' },
-  { label: 'Task History', icon: History, route: '/modules/history' },
-  { label: 'Profile', icon: User, route: '/(tabs)/profile' },
+  { label: 'Profile Settings', icon: User, route: '/(tabs)/profile' },
 ];
 
 export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
@@ -68,7 +64,7 @@ export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
   const { colors } = useAppTheme();
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { sections } = useCustomSections();
   const [search, setSearch] = useState('');
   
@@ -261,12 +257,32 @@ export function SidebarDrawer({ visible, onClose }: SidebarDrawerProps) {
           <View style={[styles.footer, { borderTopColor: colors.borderLight }]}>
             <View style={styles.userRow}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{displayName.slice(0, 2).toUpperCase()}</Text>
+                <Text style={[styles.avatarText, { color: colors.accent }]}>{displayName.slice(0, 2).toUpperCase()}</Text>
               </View>
               <View style={styles.userInfo}>
                 <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>{displayName}</Text>
                 <Text style={[styles.userEmail, { color: colors.textMuted }]} numberOfLines={1}>{user?.email}</Text>
               </View>
+            </View>
+            <View style={styles.footerActions}>
+              <Pressable
+                style={[styles.footerActionBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
+                onPress={() => handleNavigate('/(tabs)/profile')}
+              >
+                <User size={14} color={colors.textMuted} />
+                <Text style={[styles.footerActionText, { color: colors.text }]}>Settings</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.footerActionBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)' }]}
+                onPress={async () => {
+                  onClose();
+                  await logout();
+                  router.replace('/login');
+                }}
+              >
+                <X size={14} color="#EF4444" />
+                <Text style={[styles.footerActionText, { color: '#EF4444' }]}>Logout</Text>
+              </Pressable>
             </View>
           </View>
         </Animated.View>
@@ -404,5 +420,25 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 11,
+  },
+  footerActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  footerActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  footerActionText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

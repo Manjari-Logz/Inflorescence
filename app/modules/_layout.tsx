@@ -13,6 +13,7 @@ export default function ModulesLayout() {
       <Stack.Screen name="badges" />
       <Stack.Screen name="money-vault" />
       <Stack.Screen name="history" />
+      <Stack.Screen name="notification-settings" />
     </Stack>
   );
 }

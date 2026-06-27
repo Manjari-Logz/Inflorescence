@@ -4,7 +4,6 @@ import { HabitsContext } from '@/contexts/HabitsContext';
 export function useHabits() {
   const ctx = useContext(HabitsContext);
   if (!ctx) {
-    console.warn('[useHabits] must be used within HabitsProvider. Returning fallback state.');
     return {
       habits: [],
       loading: false,

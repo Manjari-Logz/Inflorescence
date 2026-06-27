@@ -9,6 +9,7 @@ import { useBooks, usePlacement } from '@/hooks/useModules';
 import { useGoals } from '@/hooks/useGoals';
 import { useMood } from '@/hooks/useMood';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useSafeTabBarHeight } from '@/hooks/useSafeTabBarHeight';
 import { Typography, Spacing, Radius } from '@/constants/theme';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -33,6 +34,7 @@ function StatRow({ items, colors }: { items: { label: string; value: string | nu
 
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useSafeTabBarHeight();
   const { colors } = useAppTheme();
   const { user } = useAuth();
   const { domains } = useStudy();
@@ -61,12 +63,12 @@ export default function AnalyticsScreen() {
   };
 
   const chartConfig = {
-    backgroundColor: colors.surface,
-    backgroundGradientFrom: colors.surfaceLight,
-    backgroundGradientTo: colors.surfaceLight,
+    backgroundColor: '#091535',
+    backgroundGradientFrom: '#000B29',
+    backgroundGradientTo: '#091535',
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
-    labelColor: () => colors.textMuted,
+    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+    labelColor: () => '#94A3B8',
     style: { borderRadius: Radius.lg },
     barPercentage: 0.6,
   };
@@ -128,14 +130,14 @@ export default function AnalyticsScreen() {
   ];
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
-      <ScreenHeader title="Analytics" subtitle="Your growth insights" showBack />
+    <View style={[styles.root, { backgroundColor: '#000B29', paddingTop: insets.top }]}>
+      <StatusBar barStyle="light-content" />
+      <ScreenHeader title="Analytics" subtitle="Your growth insights" showBack={false} showMenu={true} />
 
       {loading ? <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} /> : (
-        <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: insets.bottom + 40, gap: Spacing.md }}>
+        <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: tabBarHeight + 24, gap: Spacing.md }}>
           {sections.map((section, idx) => (
-            <GlassCard key={idx} style={{ backgroundColor: colors.surface, borderColor: colors.border, gap: Spacing.md }}>
+            <GlassCard key={idx} style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)', borderColor: 'rgba(255, 255, 255, 0.06)', gap: Spacing.md }}>
               <View style={styles.sectionHeader}>
                 <View style={[styles.sectionIcon, { backgroundColor: section.color + '18' }]}>
                   <section.icon size={18} color={section.color} strokeWidth={2} />
@@ -144,13 +146,13 @@ export default function AnalyticsScreen() {
               </View>
               <StatRow items={section.stats} colors={colors} />
               {section.progress !== undefined && (
-                <ProgressBar progress={section.progress} color={section.color} height={5} backgroundColor={colors.surfaceLight} />
+                <ProgressBar progress={section.progress} color={section.color} height={5} backgroundColor="rgba(255, 255, 255, 0.06)" />
               )}
             </GlassCard>
           ))}
 
           {/* Mood Chart */}
-          <GlassCard style={{ backgroundColor: colors.surface, borderColor: colors.border, gap: Spacing.md }}>
+          <GlassCard style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)', borderColor: 'rgba(255, 255, 255, 0.06)', gap: Spacing.md }}>
             <View style={styles.sectionHeader}>
               <View style={[styles.sectionIcon, { backgroundColor: '#F59E0B18' }]}>
                 <Smile size={18} color="#F59E0B" strokeWidth={2} />

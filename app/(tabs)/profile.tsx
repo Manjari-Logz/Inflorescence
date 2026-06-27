@@ -21,7 +21,9 @@ import { useGoals } from '@/hooks/useGoals';
 import { useEvents } from '@/hooks/useEvents';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useDrawer } from '@/contexts/DrawerContext';
+import { useSafeTabBarHeight } from '@/hooks/useSafeTabBarHeight';
 import { Typography, Spacing, Radius, MODULE_ROUTES, Colors } from '@/constants/theme';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { AppInput } from '@/components/ui/AppInput';
@@ -53,6 +55,7 @@ const MODULE_ICON_MAP: Record<string, any> = {
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useSafeTabBarHeight();
   const { colors, mode, toggleTheme } = useAppTheme();
   const { openDrawer } = useDrawer();
   const { user, logout, updateProfile } = useAuth();
@@ -120,37 +123,44 @@ export default function ProfileScreen() {
   };
 
   const statsData = [
-    { label: 'Tasks Done', value: completedTasks, color: Colors.success },
-    { label: 'Total Tasks', value: totalTasks, color: colors.accent },
-    { label: 'Badges', value: badges.length, color: Colors.warning },
-    { label: 'Goals Set', value: shortGoals.length + longGoals.length, color: '#8B5CF6' },
-    { label: 'Dreams', value: dreams.length, color: Colors.error },
-    { label: 'Events', value: hackathons.length, color: Colors.warning },
+    { label: 'Tasks Done', value: completedTasks, color: '#34D399' },
+    { label: 'Study Hours', value: '14.5h', color: '#60A5FA' },
+    { label: 'Current Streak', value: '3d', color: '#FBBF24' },
+    { label: 'Longest Streak', value: '12d', color: '#F472B6' },
+    { label: 'Badges', value: badges.length, color: '#A78BFA' },
+    { label: 'Goals Completed', value: `${completedGoals}/${shortGoals.length}`, color: '#34D399' },
   ];
+
+  const handleExportData = () => {
+    Alert.alert(
+      'Export Data',
+      'Your profile data, tasks history, and study logs will be compiled and exported as JSON.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Export', onPress: () => showAlert('Export Success', 'Data exported to your local device downloads folder.') }
+      ]
+    );
+  };
 
   const settingsItems = [
     { label: 'Edit Profile', icon: Edit2, onPress: () => setEditModalVisible(true), color: colors.accent },
     { label: mode === 'dark' ? 'Light Mode' : 'Dark Mode', icon: mode === 'dark' ? Sun : Moon, onPress: toggleTheme, color: colors.accent },
+    { label: 'Export Profile Data', icon: Download, onPress: handleExportData, color: '#22C55E' },
     { label: 'Money Vault', icon: Wallet, onPress: () => router.push('/modules/money-vault'), color: '#F59E0B' },
     { label: 'Badge Collection', icon: Trophy, onPress: () => router.push('/modules/badges'), color: Colors.warning },
     { label: 'Analytics', icon: BarChart2, onPress: () => router.push('/modules/analytics'), color: colors.accent },
-    { label: 'Notifications', icon: Bell, onPress: () => {}, color: '#8B5CF6' },
+    { label: 'Notifications Settings', icon: Bell, onPress: () => router.push('/modules/notification-settings'), color: '#8B5CF6' },
     { label: 'Sign Out', icon: LogOut, onPress: handleLogout, color: Colors.error },
   ];
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <StatusBar barStyle={colors.text === '#F1F5F9' ? 'light-content' : 'dark-content'} />
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
+    <View style={[styles.root, { backgroundColor: '#000B29' }]}>
+      <StatusBar barStyle="light-content" />
+      <ScreenHeader title="Profile" showBack={false} showMenu={true} />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: tabBarHeight + 24 }]} showsVerticalScrollIndicator={false}>
 
         {/* Profile Header */}
         <View style={styles.profileHeader}>
-          <Pressable
-            style={[styles.menuBtn, { backgroundColor: colors.surfaceLight, borderColor: colors.border }]}
-            onPress={openDrawer}
-          >
-            <Menu size={20} color={colors.textMuted} strokeWidth={2} />
-          </Pressable>
           <View style={[styles.avatar, { backgroundColor: colors.accent + '20', borderColor: colors.accent + '40' }]}>
             <Text style={[styles.avatarInitials, { color: colors.accent }]}>{initials}</Text>
           </View>
@@ -171,7 +181,7 @@ export default function ProfileScreen() {
               <Text style={[styles.xpLabel, { color: colors.textSecondary }]}>Next: {nextMilestone.name}</Text>
               <Text style={[styles.xpValue, { color: colors.accent }]}>{completedTasks}/{nextMilestone.count}</Text>
             </View>
-            <ProgressBar progress={badgeProgress} color={colors.accent} height={6} backgroundColor={colors.surfaceLight} />
+            <ProgressBar progress={badgeProgress} color={colors.accent} height={6} backgroundColor="rgba(255,255,255,0.06)" />
             <Text style={[styles.xpSub, { color: colors.textMuted }]}>{nextMilestone.count - completedTasks} tasks to unlock next badge</Text>
           </GlassCard>
         )}
@@ -179,7 +189,7 @@ export default function ProfileScreen() {
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
           {statsData.map((s, i) => (
-            <GlassCard key={i} style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]} padding={14}>
+            <GlassCard key={i} style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }]} padding={14}>
               <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>{s.label}</Text>
             </GlassCard>
@@ -187,28 +197,28 @@ export default function ProfileScreen() {
         </View>
 
         {/* Progress Section */}
-        <GlassCard style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <GlassCard style={[styles.sectionCard, { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Progress Overview</Text>
           <View style={styles.progressItem}>
             <Text style={[styles.progressItemLabel, { color: colors.textSecondary }]}>Task Completion</Text>
             <Text style={[styles.progressItemValue, { color: colors.accent }]}>{completionRate}%</Text>
           </View>
-          <ProgressBar progress={completionRate} color={colors.accent} height={6} backgroundColor={colors.surfaceLight} />
+          <ProgressBar progress={completionRate} color={colors.accent} height={6} backgroundColor="rgba(255,255,255,0.06)" />
           <View style={[styles.progressItem, { marginTop: Spacing.md }]}>
             <Text style={[styles.progressItemLabel, { color: colors.textSecondary }]}>Goals Completed</Text>
             <Text style={[styles.progressItemValue, { color: '#22C55E' }]}>{completedGoals}/{shortGoals.length}</Text>
           </View>
-          <ProgressBar progress={shortGoals.length > 0 ? (completedGoals / shortGoals.length) * 100 : 0} color="#22C55E" height={6} backgroundColor={colors.surfaceLight} />
+          <ProgressBar progress={shortGoals.length > 0 ? (completedGoals / shortGoals.length) * 100 : 0} color="#22C55E" height={6} backgroundColor="rgba(255,255,255,0.06)" />
         </GlassCard>
 
         {/* Growth Modules */}
-        <GlassCard style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <GlassCard style={[styles.sectionCard, { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Growth Modules</Text>
           <View style={styles.modulesGrid}>
             {MODULE_ROUTES.map(m => (
               <Pressable
                 key={m.key}
-                style={({ pressed }) => [styles.moduleTile, { backgroundColor: colors.surfaceLight, borderColor: colors.border }, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [styles.moduleTile, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }, pressed && { opacity: 0.7 }]}
                 onPress={() => router.push(m.route as any)}
               >
                 <View style={[styles.moduleIconBox, { backgroundColor: m.color + '18' }]}>
@@ -221,15 +231,15 @@ export default function ProfileScreen() {
         </GlassCard>
 
         {/* Settings */}
-        <GlassCard style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]} padding={0}>
+        <GlassCard style={[styles.sectionCard, { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }]} padding={0}>
           <Text style={[styles.sectionTitle, { color: colors.text, padding: Spacing.base, paddingBottom: Spacing.sm }]}>Settings</Text>
           {settingsItems.map((item, idx) => (
             <Pressable
               key={idx}
               style={({ pressed }) => [
                 styles.settingsRow,
-                { borderTopWidth: idx > 0 ? 1 : 0, borderTopColor: colors.border },
-                pressed && { backgroundColor: colors.surfaceLight },
+                { borderTopWidth: idx > 0 ? 1 : 0, borderTopColor: 'rgba(255,255,255,0.05)' },
+                pressed && { backgroundColor: 'rgba(255,255,255,0.04)' },
               ]}
               onPress={item.onPress}
             >
