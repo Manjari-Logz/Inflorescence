@@ -1,18 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable, TextInput,
-  Modal, ActivityIndicator, StatusBar, Dimensions
+  Modal, ActivityIndicator, StatusBar, FlatList, Dimensions, Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Search, SlidersHorizontal, ArrowUpDown, Calendar, Award,
-  CheckCircle2, Clock, Trash2, RotateCcw, Tag, Folder, X, ChevronRight
+  CheckCircle2, Clock, Trash2, RotateCcw, Tag, Folder, AlertCircle, X, ChevronRight
 } from 'lucide-react-native';
 import { useTasks } from '@/hooks/useTasks';
 import { useAppTheme } from '@/hooks/useAppTheme';
-import { Spacing, Radius } from '@/constants/theme';
+import { Typography, Spacing, Radius } from '@/constants/theme';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { AppInput } from '@/components/ui/AppInput';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { HistoryRecord } from '@/services/historyService';
 
 const { width } = Dimensions.get('window');

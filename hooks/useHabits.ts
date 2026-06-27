@@ -2,18 +2,7 @@ import { useContext } from 'react';
 import { HabitsContext } from '@/contexts/HabitsContext';
 
 export function useHabits() {
-  const ctx = useContext(HabitsContext);
-  if (!ctx) {
-    return {
-      habits: [],
-      loading: false,
-      addHabit: async () => {},
-      updateHabit: async () => {},
-      deleteHabit: async () => {},
-      logHabit: async () => {},
-      unlogHabit: async () => {},
-      refresh: async () => {},
-    };
-  }
-  return ctx;
+  const context = useContext(HabitsContext);
+  if (!context) throw new Error('useHabits must be used within a HabitsProvider');
+  return context;
 }

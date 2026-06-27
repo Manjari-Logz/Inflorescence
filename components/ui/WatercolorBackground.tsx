@@ -1,101 +1,51 @@
-import React from 'react';
-import { StyleSheet, View, Dimensions, StatusBar } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-
-const { width, height } = Dimensions.get('window');
+import React, { ReactNode } from 'react';
+import { View, StyleSheet } from 'react-native';
 
 interface WatercolorBackgroundProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function WatercolorBackground({ children }: WatercolorBackgroundProps) {
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      {/* Base deep navy background */}
-      <View style={styles.baseBg} />
-
-      {/* Main subtle diagonal ambient gradient */}
-      <LinearGradient
-        colors={['#06142A', '#0B1F3A', '#06142A']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-      />
-
-      {/* Ambient Blob 1 - Top Right Glowing blue */}
-      <View style={styles.blobContainer} pointerEvents="none">
-        <LinearGradient
-          colors={['rgba(122, 162, 227, 0.12)', 'rgba(11, 31, 58, 0)']}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={[styles.blob, styles.blob1]}
-        />
-      </View>
-
-      {/* Ambient Blob 2 - Center Left Glowing deep teal/navy */}
-      <View style={styles.blobContainer} pointerEvents="none">
-        <LinearGradient
-          colors={['rgba(184, 213, 255, 0.08)', 'rgba(6, 20, 42, 0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.blob, styles.blob2]}
-        />
-      </View>
-
-      {/* Ambient Blob 3 - Bottom Right Glowing */}
-      <View style={styles.blobContainer} pointerEvents="none">
-        <LinearGradient
-          colors={['rgba(122, 162, 227, 0.06)', 'rgba(11, 31, 58, 0)']}
-          start={{ x: 0, y: 1 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.blob, styles.blob3]}
-        />
-      </View>
-
-      {/* Content wrapper */}
-      <View style={styles.content}>
-        {children}
-      </View>
+    <View style={styles.root}>
+      {/* Subtle layered circles to simulate a soft watercolor wash */}
+      <View style={[styles.blob, styles.blobTopLeft]} />
+      <View style={[styles.blob, styles.blobTopRight]} />
+      <View style={[styles.blob, styles.blobBottomCenter]} />
+      {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#06142A',
-  },
-  baseBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#06142A',
-  },
-  blobContainer: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000B29',
   },
   blob: {
     position: 'absolute',
     borderRadius: 999,
+    opacity: 0.06,
   },
-  blob1: {
-    width: width * 0.9,
-    height: width * 0.9,
-    top: -height * 0.1,
-    right: -width * 0.2,
+  blobTopLeft: {
+    width: 300,
+    height: 300,
+    backgroundColor: '#3B82F6',
+    top: -80,
+    left: -80,
   },
-  blob2: {
-    width: width * 0.8,
-    height: width * 0.8,
-    top: height * 0.3,
-    left: -width * 0.3,
+  blobTopRight: {
+    width: 240,
+    height: 240,
+    backgroundColor: '#8B5CF6',
+    top: 60,
+    right: -60,
   },
-  blob3: {
-    width: width * 1.0,
-    height: width * 1.0,
-    bottom: -height * 0.15,
-    right: -width * 0.3,
-  },
-  content: {
-    flex: 1,
+  blobBottomCenter: {
+    width: 360,
+    height: 360,
+    backgroundColor: '#0EA5E9',
+    bottom: -100,
+    alignSelf: 'center',
   },
 });
